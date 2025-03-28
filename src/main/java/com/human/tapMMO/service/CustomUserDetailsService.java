@@ -1,0 +1,58 @@
+package com.human.tapMMO.service;
+
+import com.human.tapMMO.model.User;
+import com.human.tapMMO.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.stream.Collectors;
+
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+    @Autowired
+    private UserRepository userRepository; // Ваш JPA репозиторий
+
+
+    public class CustomUserDetails extends org.springframework.security.core.userdetails.User {
+        private final Long id;
+        private final String email;
+
+         public CustomUserDetails(String username, String password,
+                                 Collection<? extends GrantedAuthority> authorities,
+                                 Long id, String email) {
+            super(username, password, authorities);
+            this.id = id;
+            this.email = email;
+        }
+
+        public Long getId() {
+            return id;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Здесь вы явно говоритеspring security где и как искать пользователя
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return new CustomUserDetails(
+                user.getUsername(),
+                user.getPassword(),
+                Collections.singleton(new SimpleGrantedAuthority(user.getRole())),
+                user.getId(),
+                user.getEmail()
+        );
+    }
+}
