@@ -1,11 +1,12 @@
 package com.human.tapMMO.dto;
 
 import lombok.Data;
+import lombok.Value;
 
 
-@Data
+@Value
 public class UserDTO {
-    private String email;
-    private String username;
-    private String password;
+    String email;
+    String username;
+    String password;
 }

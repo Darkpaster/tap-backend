@@ -13,17 +13,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/webrtc")
 public class WebRTCController {
-//    @GetMapping("/ice-servers")
-//    public ResponseEntity<List<IceServer>> getIceServers() {
-//        List<IceServer> iceServers = List.of(
-//                new IceServer("stun:stun.l.google.com:19302")
-//        );
-//        return ResponseEntity.ok(iceServers);
-//    }
-//}
-//
-//@Data
-//@AllArgsConstructor
-//class IceServer {
-//    private String urls;
+    @GetMapping("/ice-servers")
+    public ResponseEntity<List<IceServer>> getIceServers() {
+        List<IceServer> iceServers = List.of(
+                new IceServer("stun:stun.l.google.com:19302")
+        );
+        return ResponseEntity.ok(iceServers);
+    }
+
+}
+
+@Data
+@AllArgsConstructor
+class IceServer {
+    private String urls;
 }

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatMessage {
-//    private Long id;
+    private Long playerID;
     private String content;
     private String sender;
     private MessageType type = MessageType.DEFAULT;
