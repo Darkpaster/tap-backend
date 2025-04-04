@@ -178,7 +178,7 @@ public class WebSocketConfig {
 
 
 //        namespace.addEventListener("joinRoom", CharacterDTO.class, (client, data, ackRequest) -> {
-//            System.out.println("client "+data.getId()+" joined to "+data.getRoomID());
+//            System.out.println("client "+data.getEntityId()+" joined to "+data.getRoomID());
 //            client.joinRoom(data.getRoomID());
 //            client.getNamespace().getRoomOperations(data.getRoomID())
 //                    .sendEvent("userConnected", data);

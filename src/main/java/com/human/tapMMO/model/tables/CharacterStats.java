@@ -18,18 +18,18 @@ public class CharacterStats {
     private Long characterId;
 
     @Column(name = "health", nullable = false)
-    private int health;
+    private int health = 100;
 
     @Column(name = "mana", nullable = false)
-    private int mana;
+    private int mana = 0;
 
     @Column(name = "stamina", nullable = false)
-    private int stamina;
+    private int stamina = 20;
 
     @Column(name = "strength", nullable = false)
-    private int strength;
+    private int strength = 1;
     @Column(name = "agility", nullable = false)
-    private int agility;
+    private int agility = 1;
     @Column(name = "intellect", nullable = false)
-    private int intellect;
+    private int intellect = 1;
 }

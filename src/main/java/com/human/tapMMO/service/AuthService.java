@@ -3,7 +3,7 @@ package com.human.tapMMO.service;
 import com.human.tapMMO.dto.UserDTO;
 import com.human.tapMMO.mapper.UserMapper;
 import com.human.tapMMO.model.tables.Account;
-import com.human.tapMMO.repository.UserRepository;
+import com.human.tapMMO.repository.AccountRepository;
 //import io.jsonwebtoken.Claims;
 //import io.jsonwebtoken.Jwts;
 //import io.jsonwebtoken.SignatureAlgorithm;
@@ -19,13 +19,13 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
     private final UserMapper userMapper;
 
 //    private final String secretKey = Base64.getEncoder().encodeToString("my-secret-key".getBytes());
 
     public Optional<UserDTO> getUserById(long id) {
-        return userRepository.findById(id).map(userMapper::toDTO);
+        return accountRepository.findById(id).map(userMapper::toDTO);
     }
 
     public UserDTO checkUser(String email, String password) throws AuthenticationException {
@@ -40,28 +40,28 @@ public class AuthService {
     }
 
     public Optional<Account> getUserByEmail(String email) {
-        return userRepository.findUserByEmail(email);
+        return accountRepository.findUserByEmail(email);
     }
 
     public Optional<Account> getUserByUsername(String username) {
-        return userRepository.findByUsername(username);
+        return accountRepository.findByUsername(username);
     }
 
     public long saveUser(UserDTO userDTO) {
         var user = userMapper.toEntity(userDTO);
         String hashedPassword = new BCryptPasswordEncoder().encode(userDTO.getPassword());
         user.setPassword(hashedPassword);
-        userRepository.save(user);
+        accountRepository.save(user);
         return user.getId();
     }
 
     public void deleteUserById(long id) {
-        userRepository.delete(userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Could not find deleting user by id: "+id)));
+        accountRepository.delete(accountRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Could not find deleting user by entityId: "+id)));
     }
 
-//    private String generateToken(long id) {
+//    private String generateToken(long entityId) {
 //        return Jwts.builder()
-//                .setSubject(String.valueOf(id))
+//                .setSubject(String.valueOf(entityId))
 //                .setIssuedAt(new Date())
 //                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 / 20)) // 3 m
 //                .signWith(SignatureAlgorithm.HS256, secretKey)

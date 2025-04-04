@@ -7,10 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Position {
-    Long entityId;
-    int x;
-    int y;
-    String renderState;
-    String entityType; //mob, player, item
+public class ActorState { // для передачи по вебсокету
+    Long actorId;
+    int health;
+    int stamina;
+    String actorType; //mob, player
 }

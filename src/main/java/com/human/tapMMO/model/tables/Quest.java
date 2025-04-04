@@ -20,6 +20,6 @@ public class Quest {
     @Column(name = "quest", updatable = false, nullable = false)
     private String quest;
 
-    @Column(name = "quest", nullable = false)
+    @Column(name = "quest_stage", nullable = false)
     private int questStage;
 }

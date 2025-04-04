@@ -1,5 +1,7 @@
 package com.human.tapMMO.repository;
 
-//
-//public interface CharacterRepository extends JpaRepository<Character, Long> {
-//}
+import com.human.tapMMO.model.tables.Character;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface CharacterRepository extends JpaRepository<Character, Long> {
+}
