@@ -1,7 +1,6 @@
 package com.human.tapMMO.mapper;
 
-import com.human.tapMMO.dto.CharacterDTO;
-import com.human.tapMMO.model.entities.Character;
+import com.human.tapMMO.model.tables.Character;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;

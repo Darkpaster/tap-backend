@@ -1,6 +1,6 @@
-package com.human.tapMMO.dto;
+package com.human.tapMMO.model;
 
-import com.human.tapMMO.model.entities.Character;
+import com.human.tapMMO.model.tables.Character;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,12 +11,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CharacterDTO {
+public class InitCharacterConnection {
     long id;
     String name;
-    int x;
-    int y;
-    String renderState;
-    String bubble;
-    String roomID;
+    String roomId;
 }

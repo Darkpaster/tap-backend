@@ -1,6 +1,6 @@
 package com.human.tapMMO.service;
 
-import com.human.tapMMO.model.User;
+import com.human.tapMMO.model.tables.Account;
 import com.human.tapMMO.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.stream.Collectors;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -44,15 +43,15 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Здесь вы явно говоритеspring security где и как искать пользователя
-        User user = userRepository.findByUsername(username)
+        Account account = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return new CustomUserDetails(
-                user.getUsername(),
-                user.getPassword(),
-                Collections.singleton(new SimpleGrantedAuthority(user.getRole())),
-                user.getId(),
-                user.getEmail()
+                account.getUsername(),
+                account.getPassword(),
+                Collections.singleton(new SimpleGrantedAuthority(account.getRole())),
+                account.getId(),
+                account.getEmail()
         );
     }
 }

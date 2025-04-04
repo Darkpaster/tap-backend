@@ -4,8 +4,8 @@ import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
-import com.human.tapMMO.dto.CharacterDTO;
-import com.human.tapMMO.dto.InitUserResponseDTO;
+import com.human.tapMMO.model.InitCharacterConnection;
+import com.human.tapMMO.model.InitUserResponse;
 import com.human.tapMMO.model.ChatMessage;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @org.springframework.context.annotation.Configuration
 public class WebSocketConfig {
 
-    private ConcurrentHashMap<String, CompletableFuture<CharacterDTO>> pendingRequests = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, CompletableFuture<InitCharacterConnection>> pendingRequests = new ConcurrentHashMap<>();
 
     @Value("${socket.host}")
     private String host;
@@ -83,7 +83,7 @@ public class WebSocketConfig {
             System.out.println("Message sent: " + data.getContent());
         });
 
-        namespace.addEventListener("sendPosition", CharacterDTO.class, (client, data, ackRequest) -> {
+        namespace.addEventListener("sendPosition", InitCharacterConnection.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
             client.getNamespace().getRoomOperations(roomId).sendEvent("receivePosition", data);
         });
@@ -95,25 +95,25 @@ public class WebSocketConfig {
         });
 
 
-        namespace.addEventListener("joinRoom", CharacterDTO.class, (client, data, ackRequest) -> {
-            System.out.println("client " + data.getId() + " joined to " + data.getRoomID());
-            client.joinRoom(data.getRoomID());
-            client.getNamespace().getRoomOperations(data.getRoomID())
+        namespace.addEventListener("joinRoom", InitCharacterConnection.class, (client, data, ackRequest) -> {
+            System.out.println("client " + data.getId() + " joined to " + data.getRoomId());
+            client.joinRoom(data.getRoomId());
+            client.getNamespace().getRoomOperations(data.getRoomId())
                     .sendEvent("userConnected", data);
         });
 
 
-        namespace.addEventListener("initUsers", CharacterDTO.class, (client, data, ackRequest) -> {
-            System.out.println("client " + data.getId() + " requested init users in " + data.getRoomID());
+        namespace.addEventListener("initUsers", InitCharacterConnection.class, (client, data, ackRequest) -> {
+            System.out.println("client " + data.getId() + " requested init users in " + data.getRoomId());
             List<SocketIOClient> users = client.getNamespace().getAllClients().stream().toList();
             int totalUsers = users.size();
 
             // Создаем массив для CompletableFuture, каждый для одного клиента
-            List<CompletableFuture<CharacterDTO>> futures = new ArrayList<>(totalUsers);
+            List<CompletableFuture<InitCharacterConnection>> futures = new ArrayList<>(totalUsers);
 
             for (SocketIOClient user : users) {
                 // Создаем новый CompletableFuture для каждого клиента
-                CompletableFuture<CharacterDTO> future = new CompletableFuture<>();
+                CompletableFuture<InitCharacterConnection> future = new CompletableFuture<>();
 
                 // Генерируем уникальный ID для этого запроса
                 String requestId = UUID.randomUUID().toString();
@@ -132,7 +132,7 @@ public class WebSocketConfig {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                     .thenAccept(v -> {
                         // Собираем все результаты
-                        CharacterDTO[] clientList = new CharacterDTO[totalUsers];
+                        InitCharacterConnection[] clientList = new InitCharacterConnection[totalUsers];
                         for (int i = 0; i < totalUsers; i++) {
                             try {
                                 clientList[i] = futures.get(i).get();
@@ -150,9 +150,9 @@ public class WebSocketConfig {
         });
 
 // Обработчик для получения ответов от клиентов
-        namespace.addEventListener("initUserResponse", InitUserResponseDTO.class, (client, response, ackRequest) -> {
+        namespace.addEventListener("initUserResponse", InitUserResponse.class, (client, response, ackRequest) -> {
             String requestId = response.getRequestId();
-            CompletableFuture<CharacterDTO> future = pendingRequests.remove(requestId);
+            CompletableFuture<InitCharacterConnection> future = pendingRequests.remove(requestId);
 
             if (future != null) {
                 // Завершаем future с полученными данными

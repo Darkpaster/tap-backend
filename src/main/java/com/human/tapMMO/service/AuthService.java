@@ -2,20 +2,16 @@ package com.human.tapMMO.service;
 
 import com.human.tapMMO.dto.UserDTO;
 import com.human.tapMMO.mapper.UserMapper;
-import com.human.tapMMO.model.User;
+import com.human.tapMMO.model.tables.Account;
 import com.human.tapMMO.repository.UserRepository;
 //import io.jsonwebtoken.Claims;
 //import io.jsonwebtoken.Jwts;
 //import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.naming.AuthenticationException;
-import java.util.Base64;
-import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -28,26 +24,26 @@ public class AuthService {
 
 //    private final String secretKey = Base64.getEncoder().encodeToString("my-secret-key".getBytes());
 
-    public Optional<UserDTO> getUserByID(long id) {
+    public Optional<UserDTO> getUserById(long id) {
         return userRepository.findById(id).map(userMapper::toDTO);
     }
 
     public UserDTO checkUser(String email, String password) throws AuthenticationException {
-        User user = getUserByEmail(email).orElseThrow(() -> new AuthenticationException("Could not find user by email: "+email));
-        String userHash = user.getPassword();
+        Account account = getUserByEmail(email).orElseThrow(() -> new AuthenticationException("Could not find user by email: "+email));
+        String userHash = account.getPassword();
         if (!password.equals(userHash)) {
 //            return ResponseEntity.notFound().build();
             throw new AuthenticationException("Wrong password!");
         }
-        System.out.printf("User %s signed in just now!", user.getEmail());
-        return userMapper.toDTO(user); // это надо возвращать в виде JWT
+        System.out.printf("User %s signed in just now!", account.getEmail());
+        return userMapper.toDTO(account); // это надо возвращать в виде JWT
     }
 
-    public Optional<User> getUserByEmail(String email) {
+    public Optional<Account> getUserByEmail(String email) {
         return userRepository.findUserByEmail(email);
     }
 
-    public Optional<User> getUserByUsername(String username) {
+    public Optional<Account> getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
 
@@ -59,7 +55,7 @@ public class AuthService {
         return user.getId();
     }
 
-    public void deleteUserByID(long id) {
+    public void deleteUserById(long id) {
         userRepository.delete(userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Could not find deleting user by id: "+id)));
     }
 

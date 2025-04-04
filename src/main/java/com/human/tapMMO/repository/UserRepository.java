@@ -1,15 +1,14 @@
 package com.human.tapMMO.repository;
 
-import com.human.tapMMO.dto.UserDTO;
-import com.human.tapMMO.model.User;
+import com.human.tapMMO.model.tables.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<Account, Long> {
 
-    Optional<User> findUserByEmail(String email);
+    Optional<Account> findUserByEmail(String email);
 
-    Optional<User> findByUsername(String username);
+    Optional<Account> findByUsername(String username);
 }
 

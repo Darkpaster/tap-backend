@@ -1,4 +1,4 @@
-package com.human.tapMMO.model;
+package com.human.tapMMO.model.tables;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -7,16 +7,14 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "users")
-public class User {
+@Table(name = "accounts")
+public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", unique = true, updatable = false, nullable = false)
