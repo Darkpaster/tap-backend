@@ -16,4 +16,6 @@ public class Item {
     private Long id;
     @Column(name = "item_type", nullable = false, updatable = false)
     private String itemType;
+    @Column(name = "equip_slot", updatable = false)
+    private byte equipSlot;
 }

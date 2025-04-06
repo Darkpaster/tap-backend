@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -39,7 +40,7 @@ public class AuthController { // forbidden axios
 
 
     @PostMapping("/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody UserDTO authenticationRequest, HttpServletResponse response) throws Exception {
+    public ResponseEntity<Long> createAuthenticationToken(@RequestBody UserDTO authenticationRequest, HttpServletResponse response) throws Exception {
         authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());
 
         final CustomUserDetailsService.CustomUserDetails userDetails = (CustomUserDetailsService.CustomUserDetails)
@@ -53,19 +54,19 @@ public class AuthController { // forbidden axios
         cookie.setHttpOnly(true);
         cookie.setSecure(true); // только HTTPS
         cookie.setPath("/");
-        cookie.setMaxAge(1 * 60); // 60 s
+        cookie.setMaxAge(60 * 60); // 60 m
         response.addCookie(cookie);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(userDetails.getId());
     }
 
     private void authenticate(String username, String password) throws Exception {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
         } catch (DisabledException e) {
-            throw new Exception("USER_DISABLED", e);
+            throw new Exception("Ты в банане", e);
         } catch (BadCredentialsException e) {
-            throw new Exception("INVALID_CREDENTIALS", e);
+            throw new Exception("Ты кто...", e);
         }
     }
 

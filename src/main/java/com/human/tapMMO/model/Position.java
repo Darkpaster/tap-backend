@@ -12,5 +12,5 @@ public class Position {
     int x;
     int y;
     String renderState;
-    String entityType; //mob, player, item
+    String entityType; //mob, player
 }

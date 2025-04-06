@@ -23,7 +23,7 @@ public class Mob { //запрос на сохранение в бд редко, 
     private int health;
 
     @Column(name = "respawn_time", nullable = false)
-    private int respawnTime; // на сервере нужен колбэк с таймером на респавн
+    private int respawnTime = 30000; // на сервере нужен колбэк с таймером на респавн
 
     @Column(name = "is_alive", nullable = false)
     private boolean isAlive = true;

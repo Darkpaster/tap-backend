@@ -28,6 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -72,16 +73,15 @@ public class SecurityConfig extends OncePerRequestFilter implements WebMvcConfig
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .authenticationManager(authenticationManager) // Важно добавить
+                .csrf(AbstractHttpConfigurer::disable) // Просто отключаем CSRF
+                .authenticationManager(authenticationManager)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // Разрешите регистрацию и логин
-                        .anyRequest().authenticated() // Остальные эндпоинты требуют аутентификации
+                        .requestMatchers("/auth/**").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(this, UsernamePasswordAuthenticationFilter.class);
-//                .csrf(Customizer.withDefaults());
 
         return http.build();
     }
@@ -89,7 +89,6 @@ public class SecurityConfig extends OncePerRequestFilter implements WebMvcConfig
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
 
 //        String requestTokenHeader = request.getHeader("Authorization");
         String requestTokenHeader = "";
@@ -106,19 +105,16 @@ public class SecurityConfig extends OncePerRequestFilter implements WebMvcConfig
 
 
         String username = null;
-        String jwtToken = null;
 
         // JWT Token находится в заголовке "Bearer token"
-        if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
-            jwtToken = requestTokenHeader.substring(7);
+        if (requestTokenHeader != null) {
             try {
-                username = jwtTokenUtil.getUsernameFromToken(jwtToken);
+                username = jwtTokenUtil.getUsernameFromToken(requestTokenHeader);
             } catch (Exception e) {
-                logger.error("Unable to get JWT Token or token expired");
+                logger.error("Unable to get JWT Token or token expired(");
             }
         } else {
-            logger.warn("JWT Token does not begin with Bearer String");
-//            System.out.println(requestTokenHeader);
+            logger.warn("JWT Token does not begin with Bearer String: "+requestTokenHeader);
         }
 
         // После получения токена, проверяем его валидность
@@ -126,7 +122,7 @@ public class SecurityConfig extends OncePerRequestFilter implements WebMvcConfig
             UserDetails userDetails = jwtUserDetailsService.loadUserByUsername(username);
 
             // Если токен валиден, настраиваем Spring Security для ручной аутентификации
-            if (jwtTokenUtil.validateToken(jwtToken, userDetails)) {
+            if (jwtTokenUtil.validateToken(requestTokenHeader, userDetails)) {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -141,8 +137,7 @@ public class SecurityConfig extends OncePerRequestFilter implements WebMvcConfig
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("*")
-//                .allowedOrigins("http://localhost:5173") // Ваш фронтенд домен
+                .allowedOrigins("http://localhost:5173") // Ваш фронтенд домен
                 .allowCredentials(true)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*");

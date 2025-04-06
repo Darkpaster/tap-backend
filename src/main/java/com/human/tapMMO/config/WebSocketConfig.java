@@ -7,6 +7,7 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.human.tapMMO.model.InitCharacterConnection;
 import com.human.tapMMO.model.InitUserResponse;
 import com.human.tapMMO.model.ChatMessage;
+import com.human.tapMMO.model.Position;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -83,7 +84,7 @@ public class WebSocketConfig {
             System.out.println("Message sent: " + data.getContent());
         });
 
-        namespace.addEventListener("sendPosition", InitCharacterConnection.class, (client, data, ackRequest) -> {
+        namespace.addEventListener("sendPosition", Position.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
             client.getNamespace().getRoomOperations(roomId).sendEvent("receivePosition", data);
         });
@@ -96,7 +97,7 @@ public class WebSocketConfig {
 
 
         namespace.addEventListener("joinRoom", InitCharacterConnection.class, (client, data, ackRequest) -> {
-            System.out.println("client " + data.getId() + " joined to " + data.getRoomId());
+            System.out.println("client " + data.getCharacterId() + " joined to " + data.getRoomId());
             client.joinRoom(data.getRoomId());
             client.getNamespace().getRoomOperations(data.getRoomId())
                     .sendEvent("userConnected", data);
@@ -104,7 +105,7 @@ public class WebSocketConfig {
 
 
         namespace.addEventListener("initUsers", InitCharacterConnection.class, (client, data, ackRequest) -> {
-            System.out.println("client " + data.getId() + " requested init users in " + data.getRoomId());
+            System.out.println("client " + data.getCharacterId() + " requested init users in " + data.getRoomId());
             List<SocketIOClient> users = client.getNamespace().getAllClients().stream().toList();
             int totalUsers = users.size();
 

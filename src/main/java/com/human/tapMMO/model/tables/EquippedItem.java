@@ -17,6 +17,9 @@ public class EquippedItem {
     @Column(name = "item_id", updatable = false, nullable = false, unique = true)
     private Long itemId;
 
-    @Column(name = "slot", nullable = false)
-    private byte slot;
+    @Column(name = "character_id", updatable = false, nullable = false)
+    private Long characterId;
+
+    @Column(name = "equipped_slot", nullable = false)
+    private byte equippedSlot;
 }

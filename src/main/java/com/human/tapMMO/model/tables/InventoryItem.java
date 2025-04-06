@@ -17,6 +17,9 @@ public class InventoryItem {
     @Column(name = "item_id", updatable = false, nullable = false, unique = true)
     private Long itemId;
 
-    @Column(name = "slot", nullable = false)
-    private short slot;
+    @Column(name = "character_id", updatable = false, nullable = false)
+    private Long characterId;
+
+    @Column(name = "inventory_slot", nullable = false)
+    private short inventorySlot;
 }
