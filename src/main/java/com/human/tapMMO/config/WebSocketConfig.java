@@ -4,22 +4,36 @@ import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
-import com.human.tapMMO.model.InitCharacterConnection;
-import com.human.tapMMO.model.InitUserResponse;
-import com.human.tapMMO.model.ChatMessage;
-import com.human.tapMMO.model.Position;
+import com.human.tapMMO.dto.MobDTO;
+import com.human.tapMMO.model.*;
+import com.human.tapMMO.model.tables.Character;
+import com.human.tapMMO.model.tables.Item;
+import com.human.tapMMO.model.tables.Mob;
+import com.human.tapMMO.service.ItemService;
+import com.human.tapMMO.service.MobService;
+import com.human.tapMMO.service.PlayerService;
 import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 @org.springframework.context.annotation.Configuration
+@RequiredArgsConstructor
 public class WebSocketConfig {
 
-    private ConcurrentHashMap<String, CompletableFuture<InitCharacterConnection>> pendingRequests = new ConcurrentHashMap<>();
+    private final ItemService itemService;
+    private final MobService mobService;
+    private final PlayerService playerService;
+
+    private final ConcurrentHashMap<String, CompletableFuture<InitCharacterConnection>> pendingRequests = new ConcurrentHashMap<>();
+
+    private EntityManager entityManager;
 
     @Value("${socket.host}")
     private String host;
@@ -49,6 +63,7 @@ public class WebSocketConfig {
 
         SocketIOServer server = new SocketIOServer(config);
 
+
         server.addConnectListener(client -> {
             System.out.println("Client connected: " + client.getSessionId());
         });
@@ -76,7 +91,18 @@ public class WebSocketConfig {
 
     @Bean
     public SocketIONamespace socketIONamespace(SocketIOServer socketIOServer) {
-        SocketIONamespace namespace = socketIOServer.addNamespace("/ws-chat");
+        SocketIONamespace namespace = socketIOServer.addNamespace("/ws-general");
+
+        entityManager = new EntityManager(mobService.initAllMobs(), itemService.initAllItems(), new Function<>() {
+            @Override
+            public List<MobDTO> apply(List<MobDTO> mobDTOS) {
+                socketIOServer.getAllClients().forEach(client -> {
+                    client.sendEvent("updateAllmobs", mobDTOS);
+                });
+                return mobDTOS;
+            }
+        });
+        entityManager.run();
 
         namespace.addEventListener("sendMessage", ChatMessage.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
@@ -84,9 +110,19 @@ public class WebSocketConfig {
             System.out.println("Message sent: " + data.getContent());
         });
 
-        namespace.addEventListener("sendPosition", Position.class, (client, data, ackRequest) -> {
+        namespace.addEventListener("sendPlayerPosition", Position.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
-            client.getNamespace().getRoomOperations(roomId).sendEvent("receivePosition", data);
+            client.getNamespace().getRoomOperations(roomId).sendEvent("receivePlayerPosition", data);
+        });
+
+        namespace.addEventListener("sendMobPosition", Position.class, (client, data, ackRequest) -> {
+            String roomId = getRoomForClient(client);
+            client.getNamespace().getRoomOperations(roomId).sendEvent("receiveMobPosition", data);
+        });
+
+        namespace.addEventListener("updateVisibleStats", Position.class, (client, data, ackRequest) -> {
+            String roomId = getRoomForClient(client);
+            client.getNamespace().getRoomOperations(roomId).sendEvent("receiveVisibleStats", data);
         });
 
 
@@ -97,15 +133,17 @@ public class WebSocketConfig {
 
 
         namespace.addEventListener("joinRoom", InitCharacterConnection.class, (client, data, ackRequest) -> {
-            System.out.println("client " + data.getCharacterId() + " joined to " + data.getRoomId());
+            System.out.println("char " + data.getCharacterId() + " joined to " + data.getRoomId());
             client.joinRoom(data.getRoomId());
             client.getNamespace().getRoomOperations(data.getRoomId())
                     .sendEvent("userConnected", data);
+            entityManager.addNewPlayer();
+            playerList.put(data.getCharacterId(), new Position());
         });
 
 
         namespace.addEventListener("initUsers", InitCharacterConnection.class, (client, data, ackRequest) -> {
-            System.out.println("client " + data.getCharacterId() + " requested init users in " + data.getRoomId());
+            System.out.println("char " + data.getCharacterId() + " requested init users in " + data.getRoomId());
             List<SocketIOClient> users = client.getNamespace().getAllClients().stream().toList();
             int totalUsers = users.size();
 
@@ -120,7 +158,6 @@ public class WebSocketConfig {
                 String requestId = UUID.randomUUID().toString();
 
                 // Сохраняем ссылку на future в каком-то хранилище, связанном с requestId
-                // Например, можно использовать ConcurrentHashMap
                 pendingRequests.put(requestId, future);
 
                 // Отправляем запрос клиенту с уникальным ID
@@ -159,31 +196,52 @@ public class WebSocketConfig {
                 // Завершаем future с полученными данными
                 future.complete(response.getCharacterData());
 
-                // В методе addEventListener добавьте для каждого future
-//                CompletableFuture.runAsync(() -> {
-//                    try {
-//                        // Ждем ответа не более 5 секунд
-//                        Thread.sleep(5000);
-//
-//                        // Если future еще не завершен, завершаем его с нулевым результатом
-//                        if (!future.isDone()) {
-//                            pendingRequests.remove(requestId);
-//                            future.complete(null);
-//                        }
-//                    } catch (InterruptedException e) {
-//                        Thread.currentThread().interrupt();
-//                    }
-//                });
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        Thread.sleep(5000);
+
+                        // Если future еще не завершен, завершаем его с нулевым результатом
+                        if (!future.isDone()) {
+                            pendingRequests.remove(requestId);
+                            future.complete(null);
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
             }
         });
 
 
-//        namespace.addEventListener("joinRoom", CharacterDTO.class, (client, data, ackRequest) -> {
-//            System.out.println("client "+data.getEntityId()+" joined to "+data.getRoomID());
-//            client.joinRoom(data.getRoomID());
-//            client.getNamespace().getRoomOperations(data.getRoomID())
-//                    .sendEvent("userConnected", data);
-//        });
+        namespace.addEventListener("deleteMob", Mob.class, (client, data, ackRequest) -> {
+            System.out.println("mob " + data.getId() + " is deleting");
+            String roomId = getRoomForClient(client);
+            client.getNamespace().getRoomOperations(roomId)
+                    .sendEvent("receiveDeletedMob", data);
+        });
+
+
+        namespace.addEventListener("deletePlayer", Character.class, (client, data, ackRequest) -> {
+            System.out.println("player " + data.getId() + " is deleting");
+            String roomId = getRoomForClient(client);
+            client.getNamespace().getRoomOperations(roomId)
+                    .sendEvent("receiveDeletedPlayer", data);
+        });
+
+        namespace.addEventListener("deleteItem", Item.class, (client, data, ackRequest) -> {
+            System.out.println("player " + data.getId() + " is deleting");
+            String roomId = getRoomForClient(client);
+            client.getNamespace().getRoomOperations(roomId)
+                    .sendEvent("receiveDeletedItem", data);
+        });
+
+        namespace.addEventListener("sendItem", InitCharacterConnection.class, (client, data, ackRequest) -> {
+            System.out.println("char " + data.getCharacterId() + " joined to " + data.getRoomId());
+            client.joinRoom(data.getRoomId());
+            client.getNamespace().getRoomOperations(data.getRoomId())
+                    .sendEvent("userConnected", data);
+        });
+
 
 //        namespace.addEventListener("ice-candidate", Candidate.class, (client, data, ackRequest) -> {
 //            System.out.println("ice candidate: "+data.getRoomId());

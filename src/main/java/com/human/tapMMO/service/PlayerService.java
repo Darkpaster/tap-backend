@@ -20,12 +20,7 @@ public class PlayerService {
     private final CharacterRepository characterRepository;
     private final CharacterStatsRepository characterStatsRepository;
     private final InventoryItemRepository inventoryItemRepository;
-    private final ItemRepository itemRepository;
-    private final ItemPositionRepository itemPositionRepository;
-    private final ItemStatsRepository itemStatsRepository;
     private final EquippedItemRepository equippedItemRepository;
-    private final GroupMemberRepository groupMemberRepository;
-    private final GroupRepository groupRepository;
     private final AchievementRepository achievementRepository;
     private final ProfessionRepository professionRepository;
     private final QuestRepository questRepository;
@@ -96,44 +91,5 @@ public class PlayerService {
         System.out.println("Deleted character items: "+deletedInventory+", "+deletedEquipped);
     }
 
-    public void equipItem(InventoryItem inventoryItem) {
-        inventoryItemRepository.findById(inventoryItem.getId()).orElseThrow(() -> new NoSuchElementException("equip item"));
-        inventoryItemRepository.deleteById(inventoryItem.getId());
-        final var newEquippedItem = new EquippedItem();
-        final var item = itemRepository.findById(inventoryItem.getItemId()).orElseThrow(() -> new NoSuchElementException("equip item primary"));;
-        newEquippedItem.setEquippedSlot(item.getEquipSlot());
-        newEquippedItem.setItemId(inventoryItem.getItemId());
-        equippedItemRepository.save(newEquippedItem);
-    }
-
-    public void unequipItem(EquippedItem equippedItem, short inventorySlot) {
-        equippedItemRepository.findById(equippedItem.getId()).orElseThrow(() -> new NoSuchElementException("unequip item"));
-        equippedItemRepository.deleteById(equippedItem.getId());
-        final var newInventoryItem = new InventoryItem();
-        newInventoryItem.setItemId(equippedItem.getItemId());
-        newInventoryItem.setInventorySlot(inventorySlot);
-        inventoryItemRepository.save(newInventoryItem);
-    }
-
-    public void dropItem(InventoryItem inventoryItem, ItemPosition itemPosition) {
-        inventoryItemRepository.findByItemId(inventoryItem.getItemId()).orElseThrow(() -> new NoSuchElementException("drop item"));
-        inventoryItemRepository.deleteById(inventoryItem.getId());
-        itemPositionRepository.save(itemPosition);
-    }
-
-    public void pickUpItem(InventoryItem inventoryItem) {
-        final var posId = itemPositionRepository.getByItemId(inventoryItem.getItemId()).orElseThrow(() -> new NoSuchElementException("pick up item"));
-        itemPositionRepository.deleteById(posId.getId());
-        inventoryItemRepository.save(inventoryItem);
-    }
-
-    public void lootItem(ItemPosition itemPosition) { //при убийстве моба
-        itemPositionRepository.save(itemPosition);
-    }
-
-    public void deleteItem(long itemId) {
-        itemRepository.findById(itemId).orElseThrow(() -> new NoSuchElementException("remove item"));
-        itemRepository.deleteById(itemId);
-    }
 
 }

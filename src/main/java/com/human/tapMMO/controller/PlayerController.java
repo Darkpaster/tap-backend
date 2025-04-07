@@ -4,25 +4,28 @@ import com.human.tapMMO.model.InitCharacterConnection;
 import com.human.tapMMO.model.tables.*;
 import com.human.tapMMO.model.tables.Character;
 import com.human.tapMMO.service.CustomUserDetailsService;
+import com.human.tapMMO.service.ItemService;
+import com.human.tapMMO.service.MobService;
 import com.human.tapMMO.service.PlayerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/player")
 public class PlayerController {
     private final PlayerService playerService;
+    private final ItemService itemService;
+    private final MobService mobService;
 
-    @PostMapping("/create")
+    @PostMapping("/createChar")
     public ResponseEntity<InitCharacterConnection> createNewCharacter(@RequestBody InitCharacterConnection init, Authentication authentication) throws Exception {
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetailsService.CustomUserDetails userDetails) {
+            mobService.updateDB();
             return ResponseEntity.ok(playerService.initNewCharacter(init, userDetails.getId()));
         }
         System.out.println("unauthorized");
@@ -63,31 +66,31 @@ public class PlayerController {
 
     @PostMapping("/equipItem")
     public ResponseEntity equipItem(@RequestBody InventoryItem inventoryItem) {
-        playerService.equipItem(inventoryItem);
+        itemService.equipItem(inventoryItem);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/unequipItem")
     public ResponseEntity unequipItem(@RequestBody EquippedItem equippedItem, short inventorySlot) {
-        playerService.unequipItem(equippedItem, inventorySlot);
+        itemService.unequipItem(equippedItem, inventorySlot);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/dropItem")
     public ResponseEntity dropItem(@RequestBody InventoryItem inventoryItem, ItemPosition itemPosition) {
-        playerService.dropItem(inventoryItem, itemPosition);
+        itemService.dropItem(inventoryItem, itemPosition);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/pickUpItem")
     public ResponseEntity pickUpItem(@RequestBody InventoryItem inventoryItem) {
-        playerService.pickUpItem(inventoryItem);
+        itemService.pickUpItem(inventoryItem);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/lootItem")
-    public ResponseEntity lootItem(@RequestBody ItemPosition itemPosition) {
-        playerService.lootItem(itemPosition);
+    public ResponseEntity lootItem(@RequestBody ItemPosition itemPosition, Item item) {
+        itemService.lootItem(itemPosition, item);
         return ResponseEntity.ok().build();
     }
 }

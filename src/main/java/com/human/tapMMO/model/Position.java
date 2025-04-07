@@ -8,9 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Position {
-    Long entityId;
-    int x;
-    int y;
-    String renderState;
-    String entityType; //mob, player
+    private Long entityId;
+    private int x;
+    private int y;
+    private String renderState;
 }

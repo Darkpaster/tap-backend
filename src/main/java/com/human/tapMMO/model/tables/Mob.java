@@ -20,11 +20,13 @@ public class Mob { //запрос на сохранение в бд редко, 
     private int y = 0;
 
     @Column(name = "health", nullable = false)
-    private int health;
+    private int health; //обновлять при респавне
 
     @Column(name = "respawn_time", nullable = false)
-    private int respawnTime = 30000; // на сервере нужен колбэк с таймером на респавн
+    private int respawnTime = 10;
 
     @Column(name = "is_alive", nullable = false)
     private boolean isAlive = true;
+
+    //mobType
 }
