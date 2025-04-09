@@ -17,6 +17,9 @@ public class ItemPosition {
     @Column(name = "item_id", updatable = false, nullable = false, unique = true)
     private Long itemId;
 
+    @Column(name = "item_type", nullable = false)
+    private String itemType = "smallPotionOfHealing";
+
     @Column(name = "x", nullable = false, updatable = false)
     private int x;
     @Column(name = "y", nullable = false, updatable = false)

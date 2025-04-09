@@ -25,7 +25,6 @@ public class PlayerController {
     @PostMapping("/createChar")
     public ResponseEntity<InitCharacterConnection> createNewCharacter(@RequestBody InitCharacterConnection init, Authentication authentication) throws Exception {
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetailsService.CustomUserDetails userDetails) {
-            mobService.updateDB();
             return ResponseEntity.ok(playerService.initNewCharacter(init, userDetails.getId()));
         }
         System.out.println("unauthorized");

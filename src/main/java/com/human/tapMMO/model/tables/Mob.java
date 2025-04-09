@@ -1,14 +1,17 @@
 package com.human.tapMMO.model.tables;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.Instant;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "mobs")
-public class Mob { //запрос на сохранение в бд редко, частые обновления по вебсокету (ActorState)
+public class Mob {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", unique = true, updatable = false, nullable = false)
@@ -20,13 +23,15 @@ public class Mob { //запрос на сохранение в бд редко, 
     private int y = 0;
 
     @Column(name = "health", nullable = false)
-    private int health; //обновлять при респавне
+    private int health = 50; //обновлять при респавне
 
     @Column(name = "respawn_time", nullable = false)
-    private int respawnTime = 10;
+    private Instant respawnTime = Instant.now().plusSeconds(10);
 
-    @Column(name = "is_alive", nullable = false)
-    private boolean isAlive = true;
+    @Column(name = "state", nullable = false)
+    @Pattern(regexp = "dead|alive")
+    private String state = "alive";
 
-    //mobType
+    @Column(name = "mob_type", nullable = false, updatable = false)
+    private String mobType = "blueSlime";
 }

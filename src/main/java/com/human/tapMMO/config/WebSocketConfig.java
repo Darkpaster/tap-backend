@@ -9,9 +9,7 @@ import com.human.tapMMO.model.*;
 import com.human.tapMMO.model.tables.Character;
 import com.human.tapMMO.model.tables.Item;
 import com.human.tapMMO.model.tables.Mob;
-import com.human.tapMMO.service.ItemService;
-import com.human.tapMMO.service.MobService;
-import com.human.tapMMO.service.PlayerService;
+import com.human.tapMMO.service.*;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +27,13 @@ public class WebSocketConfig {
 
     private final ItemService itemService;
     private final MobService mobService;
-    private final PlayerService playerService;
 
     private final ConcurrentHashMap<String, CompletableFuture<InitCharacterConnection>> pendingRequests = new ConcurrentHashMap<>();
 
-    private EntityManager entityManager;
+    @Autowired
+    private GameLoopService entityManager;
+
+    private RespawnService respawnService;
 
     @Value("${socket.host}")
     private String host;
@@ -89,60 +89,61 @@ public class WebSocketConfig {
     }
 
 
+    private SocketIONamespace generalNamespace;
+
+    @Bean
+    public Function<List<MobDTO>, List<MobDTO>> sendUpdatedMobs() {
+        return input -> {
+            generalNamespace.getAllClients().forEach(client -> client.sendEvent("updateAllMobs", input));
+            return input;
+        };
+    }
+
     @Bean
     public SocketIONamespace socketIONamespace(SocketIOServer socketIOServer) {
-        SocketIONamespace namespace = socketIOServer.addNamespace("/ws-general");
+        this.generalNamespace = socketIOServer.addNamespace("/ws-general");
 
-        entityManager = new EntityManager(mobService.initAllMobs(), itemService.initAllItems(), new Function<>() {
-            @Override
-            public List<MobDTO> apply(List<MobDTO> mobDTOS) {
-                socketIOServer.getAllClients().forEach(client -> {
-                    client.sendEvent("updateAllmobs", mobDTOS);
-                });
-                return mobDTOS;
-            }
-        });
-        entityManager.run();
+        entityManager.init(mobService.initAllMobs(), itemService.initAllItems(), sendUpdatedMobs());
 
-        namespace.addEventListener("sendMessage", ChatMessage.class, (client, data, ackRequest) -> {
+        generalNamespace.addEventListener("sendMessage", ChatMessage.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
             client.getNamespace().getRoomOperations(roomId).sendEvent("receiveMessage", data);
             System.out.println("Message sent: " + data.getContent());
         });
 
-        namespace.addEventListener("sendPlayerPosition", Position.class, (client, data, ackRequest) -> {
+        generalNamespace.addEventListener("sendPlayerPosition", Position.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
             client.getNamespace().getRoomOperations(roomId).sendEvent("receivePlayerPosition", data);
+            entityManager.updatePlayer(data);
         });
 
-        namespace.addEventListener("sendMobPosition", Position.class, (client, data, ackRequest) -> {
+        generalNamespace.addEventListener("sendMobPosition", Position.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
             client.getNamespace().getRoomOperations(roomId).sendEvent("receiveMobPosition", data);
         });
 
-        namespace.addEventListener("updateVisibleStats", Position.class, (client, data, ackRequest) -> {
+        generalNamespace.addEventListener("updateVisibleStats", Position.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
             client.getNamespace().getRoomOperations(roomId).sendEvent("receiveVisibleStats", data);
         });
 
 
-        namespace.addEventListener("createRoom", String.class, (client, roomId, ackRequest) -> {
+        generalNamespace.addEventListener("createRoom", String.class, (client, roomId, ackRequest) -> {
             System.out.println("room created: " + roomId);
             client.sendEvent("roomCreated", roomId);
         });
 
 
-        namespace.addEventListener("joinRoom", InitCharacterConnection.class, (client, data, ackRequest) -> {
+        generalNamespace.addEventListener("joinRoom", InitCharacterConnection.class, (client, data, ackRequest) -> {
             System.out.println("char " + data.getCharacterId() + " joined to " + data.getRoomId());
             client.joinRoom(data.getRoomId());
             client.getNamespace().getRoomOperations(data.getRoomId())
                     .sendEvent("userConnected", data);
-            entityManager.addNewPlayer();
-            playerList.put(data.getCharacterId(), new Position());
+            entityManager.addNewPlayer(data);
         });
 
 
-        namespace.addEventListener("initUsers", InitCharacterConnection.class, (client, data, ackRequest) -> {
+        generalNamespace.addEventListener("initUsers", InitCharacterConnection.class, (client, data, ackRequest) -> {
             System.out.println("char " + data.getCharacterId() + " requested init users in " + data.getRoomId());
             List<SocketIOClient> users = client.getNamespace().getAllClients().stream().toList();
             int totalUsers = users.size();
@@ -188,7 +189,7 @@ public class WebSocketConfig {
         });
 
 // Обработчик для получения ответов от клиентов
-        namespace.addEventListener("initUserResponse", InitUserResponse.class, (client, response, ackRequest) -> {
+        generalNamespace.addEventListener("initUserResponse", InitUserResponse.class, (client, response, ackRequest) -> {
             String requestId = response.getRequestId();
             CompletableFuture<InitCharacterConnection> future = pendingRequests.remove(requestId);
 
@@ -213,29 +214,16 @@ public class WebSocketConfig {
         });
 
 
-        namespace.addEventListener("deleteMob", Mob.class, (client, data, ackRequest) -> {
-            System.out.println("mob " + data.getId() + " is deleting");
-            String roomId = getRoomForClient(client);
-            client.getNamespace().getRoomOperations(roomId)
-                    .sendEvent("receiveDeletedMob", data);
-        });
+        //delete mob & player on server side only
 
-
-        namespace.addEventListener("deletePlayer", Character.class, (client, data, ackRequest) -> {
-            System.out.println("player " + data.getId() + " is deleting");
-            String roomId = getRoomForClient(client);
-            client.getNamespace().getRoomOperations(roomId)
-                    .sendEvent("receiveDeletedPlayer", data);
-        });
-
-        namespace.addEventListener("deleteItem", Item.class, (client, data, ackRequest) -> {
+        generalNamespace.addEventListener("deleteItem", Item.class, (client, data, ackRequest) -> {
             System.out.println("player " + data.getId() + " is deleting");
             String roomId = getRoomForClient(client);
             client.getNamespace().getRoomOperations(roomId)
                     .sendEvent("receiveDeletedItem", data);
         });
 
-        namespace.addEventListener("sendItem", InitCharacterConnection.class, (client, data, ackRequest) -> {
+        generalNamespace.addEventListener("sendItem", InitCharacterConnection.class, (client, data, ackRequest) -> {
             System.out.println("char " + data.getCharacterId() + " joined to " + data.getRoomId());
             client.joinRoom(data.getRoomId());
             client.getNamespace().getRoomOperations(data.getRoomId())
@@ -265,7 +253,7 @@ public class WebSocketConfig {
 //                    .sendEvent("answer", answer);
 //        });
 
-        return namespace;
+        return generalNamespace;
     }
 
 }

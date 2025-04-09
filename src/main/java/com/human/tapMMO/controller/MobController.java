@@ -19,7 +19,10 @@ public class MobController {
 //    private final List<DeferredResult<String>> clients = new CopyOnWriteArrayList<>();
     @GetMapping("/init")
     public ResponseEntity<List<Mob>> initAllMobs() {
-        return ResponseEntity.ok(mobService.initAllMobs());
+//        mobService.updateDB();
+        var mobs = mobService.initAllMobs();
+        System.out.println("mobs init: "+mobs.size());
+        return ResponseEntity.ok(mobs);
     }
 
 

@@ -19,6 +19,7 @@ public class ItemController {
 
     @GetMapping("/init")
     public ResponseEntity<List<ItemPosition>> initAllMobs() {
+        System.out.println("items init");
         return ResponseEntity.ok(itemService.initAllItems());
     }
 }
