@@ -1,4 +1,4 @@
-package com.human.tapMMO.model;
+package com.human.tapMMO.runtime.game;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.human.tapMMO.service;
+package com.human.tapMMO.service.auth;
 
 import com.human.tapMMO.dto.UserDTO;
 import com.human.tapMMO.mapper.UserMapper;

@@ -1,7 +1,7 @@
 package com.human.tapMMO.controller;
 
 import com.corundumstudio.socketio.SocketIOServer;
-import com.human.tapMMO.model.ChatMessage;
+import com.human.tapMMO.runtime.game.ChatMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;

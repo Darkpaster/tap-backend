@@ -1,4 +1,4 @@
-package com.human.tapMMO.service;
+package com.human.tapMMO.service.auth;
 
 import com.human.tapMMO.model.tables.Account;
 import com.human.tapMMO.repository.AccountRepository;

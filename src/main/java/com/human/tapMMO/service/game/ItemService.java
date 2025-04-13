@@ -1,4 +1,4 @@
-package com.human.tapMMO.service;
+package com.human.tapMMO.service.game;
 
 import com.human.tapMMO.model.tables.EquippedItem;
 import com.human.tapMMO.model.tables.InventoryItem;
@@ -52,9 +52,12 @@ public class ItemService {
         inventoryItemRepository.save(inventoryItem);
     }
 
-    public void lootItem(ItemPosition itemPosition, Item item) { //при убийстве моба
-        final var savedItem = itemRepository.saveAndFlush(item);
-        itemPosition.setItemId(savedItem.getId());
+    public void lootItem(ItemPosition itemPosition) { //при убийстве моба
+        final var newItem = new Item();
+        newItem.setItemType(itemPosition.getItemType());
+        newItem.setEquipSlot(itemPosition.getEquipSlot());
+        itemRepository.saveAndFlush(newItem);
+        itemPosition.setItemId(newItem.getId());
         itemPositionRepository.save(itemPosition);
     }
 

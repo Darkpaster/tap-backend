@@ -1,6 +1,5 @@
-package com.human.tapMMO.model;
+package com.human.tapMMO.model.connection;
 
-import com.human.tapMMO.model.tables.Character;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

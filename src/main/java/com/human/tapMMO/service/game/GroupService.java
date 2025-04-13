@@ -1,4 +1,4 @@
-package com.human.tapMMO.service;
+package com.human.tapMMO.service.game;
 
 import com.human.tapMMO.repository.GroupMemberRepository;
 import com.human.tapMMO.repository.GroupRepository;

@@ -1,12 +1,10 @@
-package com.human.tapMMO.model;
+package com.human.tapMMO.runtime.game;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Position {
     private Long entityId;
     private int x;

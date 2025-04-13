@@ -1,9 +1,8 @@
-package com.human.tapMMO.service;
+package com.human.tapMMO.service.game;
 
 import com.human.tapMMO.model.tables.Mob;
 import com.human.tapMMO.repository.MobRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -20,13 +19,13 @@ public class MobService {
         var mob = mobRepository.findById(mobId).orElseThrow(() -> new NoSuchElementException("mob dies"));
         mob.setState("dead");
         mob.setRespawnTime(Instant.now().plusSeconds(10));
-        mobRepository.save(mob);
+        mobRepository.saveAndFlush(mob);
     }
 
     public void updateDB() {
         mobRepository.deleteAll();
         mobRepository.flush();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 500; i++) {
             final Point coords = generateCoordinatesInZone();
             final var newMob = new Mob();
             newMob.setX((int) coords.getX());
@@ -39,19 +38,6 @@ public class MobService {
         double x = -5000 + Math.random() * (5000 + 5000);
         double y = -5000 + Math.random() * (5000 + 5000);
         return new Point((int) x, (int) y);
-    }
-
-    @Scheduled(fixedRate = 500)
-    public void checkAndRespawnMobs() {
-        final List<Mob> mobsToRespawn = mobRepository.findAllByStateAndRespawnTimeBefore("dead", Instant.now());
-
-        for(Mob mob: mobsToRespawn) {
-            Point newCoords = generateCoordinatesInZone();
-            mob.setX((int) newCoords.getX());
-            mob.setY((int) newCoords.getY());
-            mob.setState("alive");
-            mobRepository.save(mob);
-        }
     }
 
 

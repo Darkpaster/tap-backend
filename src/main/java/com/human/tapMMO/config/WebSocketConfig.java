@@ -4,12 +4,18 @@ import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
+import com.human.tapMMO.dto.DamageDTO;
 import com.human.tapMMO.dto.MobDTO;
-import com.human.tapMMO.model.*;
-import com.human.tapMMO.model.tables.Character;
-import com.human.tapMMO.model.tables.Item;
-import com.human.tapMMO.model.tables.Mob;
-import com.human.tapMMO.service.*;
+import com.human.tapMMO.model.connection.InitCharacterConnection;
+import com.human.tapMMO.model.connection.InitUserResponse;
+import com.human.tapMMO.runtime.game.ChatMessage;
+import com.human.tapMMO.runtime.game.Position;
+import com.human.tapMMO.model.tables.ItemPosition;
+import com.human.tapMMO.repository.ItemRepository;
+import com.human.tapMMO.service.game.GameLoopService;
+import com.human.tapMMO.service.game.ItemService;
+import com.human.tapMMO.service.game.MobService;
+import com.human.tapMMO.service.game.RespawnService;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +39,7 @@ public class WebSocketConfig {
     @Autowired
     private GameLoopService entityManager;
 
+    @Autowired
     private RespawnService respawnService;
 
     @Value("${socket.host}")
@@ -100,7 +107,8 @@ public class WebSocketConfig {
     }
 
     @Bean
-    public SocketIONamespace socketIONamespace(SocketIOServer socketIOServer) {
+    public SocketIONamespace socketIONamespace(SocketIOServer socketIOServer,
+                                               ItemRepository itemRepository) {
         this.generalNamespace = socketIOServer.addNamespace("/ws-general");
 
         entityManager.init(mobService.initAllMobs(), itemService.initAllItems(), sendUpdatedMobs());
@@ -216,18 +224,43 @@ public class WebSocketConfig {
 
         //delete mob & player on server side only
 
-        generalNamespace.addEventListener("deleteItem", Item.class, (client, data, ackRequest) -> {
-            System.out.println("player " + data.getId() + " is deleting");
+        generalNamespace.addEventListener("deleteItem", ItemPosition.class, (client, data, ackRequest) -> {
+            System.out.println("item " + data.getItemId() + " is deleting");
             String roomId = getRoomForClient(client);
+            entityManager.deleteItem(data.getItemId());
+            itemService.deleteItem(data.getItemId());
             client.getNamespace().getRoomOperations(roomId)
-                    .sendEvent("receiveDeletedItem", data);
+                    .sendEvent("deleteItem", data);
         });
 
-        generalNamespace.addEventListener("sendItem", InitCharacterConnection.class, (client, data, ackRequest) -> {
-            System.out.println("char " + data.getCharacterId() + " joined to " + data.getRoomId());
-            client.joinRoom(data.getRoomId());
-            client.getNamespace().getRoomOperations(data.getRoomId())
-                    .sendEvent("userConnected", data);
+        generalNamespace.addEventListener("lootItem", ItemPosition.class, (client, data, ackRequest) -> {
+            System.out.println("char sent item " + data.getItemId());
+            String roomId = getRoomForClient(client);
+            entityManager.addNewItem(data);
+            itemService.lootItem(data);
+            client.getNamespace().getRoomOperations(roomId)
+                    .sendEvent("addItem", data);
+        });
+
+//        generalNamespace.addEventListener("dropItem", ItemPosition.class, (client, data, ackRequest) -> {
+//            System.out.println("char sent item " + data.getItemId());
+//            String roomId = getRoomForClient(client);
+//            entityManager.addNewItem(data);
+//            itemService.dropItem(data);
+//            client.getNamespace().getRoomOperations(roomId)
+//                    .sendEvent("addItem", data);
+//        });
+
+        generalNamespace.addEventListener("dealDamage", DamageDTO.class, (client, data, ackrequest) -> {
+            System.out.println("dealt damage to " + data.getTarget().getTargetId());
+            String roomId = getRoomForClient(client);
+            if (Objects.equals(data.getTarget().getTargetType(), "mob")) {
+                final var mobId = data.getTarget().getTargetId();
+                final var dead = entityManager.dealDamageToMob(mobId, data.getValue());
+                if (dead) {
+                    mobService.die(mobId);
+                }
+            }
         });
 
 
@@ -252,6 +285,11 @@ public class WebSocketConfig {
 //            client.getNamespace().getRoomOperations(roomId)
 //                    .sendEvent("answer", answer);
 //        });
+
+        respawnService.init(mob -> {
+            entityManager.addNewMob(mob);
+            return mob;
+        });
 
         return generalNamespace;
     }

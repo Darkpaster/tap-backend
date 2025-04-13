@@ -1,45 +1,55 @@
 package com.human.tapMMO.dto;
 
 
-import com.human.tapMMO.model.Position;
-import com.human.tapMMO.model.tables.Mob;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.human.tapMMO.runtime.game.Position;
+import com.human.tapMMO.util.Util;
 import lombok.Data;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Objects;
 
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @Data
 public class MobDTO {
     protected enum States {
         WANDERING,
         FLEEING,
         CHASING,
+        SLEEPING,
     }
 
     private long id;
-    protected int x;
-    protected int y;
-    protected int speed = 5;
+    protected float x;
+    protected float y;
+    protected byte speed = 2;
     protected int health = 100;
     protected String renderState = "idle";
 
     protected Position target = null;
 
-    protected int agroRadius = 200;
-
+    @JsonIgnore
+    protected short agroRadius = 100;
+    @JsonIgnore
     protected States state = States.WANDERING;
+    @JsonIgnore
+    private Instant timeToWalk = Instant.now().plusSeconds(Util.randomInt(3));
+    @JsonIgnore
+    private byte randomDirection = 0;
 
     private void moveTowardsTarget() {
-        if (target == null) {
+        if (this.target == null) {
             this.state = States.WANDERING;
             return;
         }
-        final int distance = getDistance(this.getX(), this.getY(), this.target.getX(), this.target.getY());
-        if (distance > 500) {
+        final float distance = getDistance(this.getX(), this.getY(), this.target.getX(), this.target.getY());
+        if (distance > 200) {
             this.state = States.WANDERING;
             this.target = null;
-        } else if (distance > 20) {
+        } else if (distance > 16) {
             this.setX(this.getX() + (this.target.getX() - this.getX()) / distance * speed);
             this.setY(this.getY() + (this.target.getY() - this.getY()) / distance * speed);
         }
@@ -49,21 +59,44 @@ public class MobDTO {
         for (Position player: players) {
             if (getDistance(player.getX(), player.getY(), x, y) < this.agroRadius) {
                 this.target = player;
-                System.out.println(this.target.getX());
-                System.out.println(this.target.getY());
+                this.target.setX(player.getX());
+                this.target.setY(player.getY());
                 this.state = States.CHASING;
+                this.renderState = "run";
                 return;
             }
         }
     }
 
     private void wander() {
-        this.setX((int) (this.getX() + (Math.random() * 10 - 5)));
-        this.setY((int) (this.getY() + (Math.random() * 10 - 5)));
+        if (this.timeToWalk.isBefore(Instant.now())) {
+            if (Objects.equals(this.renderState, "idle")) {
+                this.renderState = "walk";
+                this.randomDirection = (byte) Util.randomInt(3);
+            } else {
+                this.renderState = "idle";
+            }
+            this.timeToWalk = Instant.now().plusSeconds(Util.randomInt(2, 5));
+        }
+        if (Objects.equals(this.renderState, "walk")) {
+            switch (randomDirection) {
+                case 0:
+                    this.x -= (float) speed / 2;
+                    break;
+                case 1:
+                    this.x += (float) speed / 2;
+                    break;
+                case 2:
+                    this.y -= (float) speed / 2;
+                    break;
+                case 3:
+                    this.y += (float) speed / 2;
+            }
+        }
     }
 
     private void moveAwayFromTarget() {
-        final int distance = getDistance(this.getX(), this.getY(), this.target.getX(), this.target.getY());
+        final float distance = getDistance(this.getX(), this.getY(), this.target.getX(), this.target.getY());
         if (distance < 500) {
 //            this.setX(this.getX() - (this.target.getX() - this.getX()) / distance * speed);
 //            this.setY(this.getY() - (this.target.getY() - this.getY()) / distance * speed);
@@ -83,8 +116,25 @@ public class MobDTO {
         return this;
     }
 
-    private int getDistance(int x1, int y1, int x2, int y2) {
-        return (int) Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+    private float getDistance(float x1, float y1, float x2, float y2) {
+        return (float) Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+    }
+
+    private float getDistanceX(float x1, float x2) {
+        return Math.abs(Math.abs(x1) - Math.abs(x2));
+    }
+
+    private float getDistanceY(float y1, float y2) {
+        return Math.abs(Math.abs(y1) - Math.abs(y2));
+    }
+
+    public boolean dealDamage(int value) {
+        health -= value;
+        if (health <= 0) {
+            this.renderState = "death";
+            return true;
+        }
+        return false;
     }
 
 }

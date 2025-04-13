@@ -1,4 +1,4 @@
-package com.human.tapMMO.model;
+package com.human.tapMMO.model.connection;
 
 import lombok.Data;
 

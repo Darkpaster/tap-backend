@@ -1,15 +1,13 @@
-package com.human.tapMMO.service;
+package com.human.tapMMO.service.game;
 
 
-import com.human.tapMMO.model.InitCharacterConnection;
+import com.human.tapMMO.model.connection.InitCharacterConnection;
 import com.human.tapMMO.model.tables.*;
 import com.human.tapMMO.model.tables.Character;
 import com.human.tapMMO.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.sql.Array;
-import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;

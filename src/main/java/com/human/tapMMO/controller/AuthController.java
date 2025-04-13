@@ -1,8 +1,8 @@
 package com.human.tapMMO.controller;
 
 import com.human.tapMMO.dto.UserDTO;
-import com.human.tapMMO.service.AuthService;
-import com.human.tapMMO.service.CustomUserDetailsService;
+import com.human.tapMMO.service.auth.AuthService;
+import com.human.tapMMO.service.auth.CustomUserDetailsService;
 import com.human.tapMMO.util.JWTTokenUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,7 +14,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.security.core.userdetails.UserDetailsService;

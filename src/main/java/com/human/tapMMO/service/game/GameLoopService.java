@@ -1,15 +1,13 @@
-package com.human.tapMMO.service;
+package com.human.tapMMO.service.game;
 
 import com.human.tapMMO.dto.MobDTO;
-import com.human.tapMMO.model.InitCharacterConnection;
-import com.human.tapMMO.model.Position;
+import com.human.tapMMO.model.connection.InitCharacterConnection;
+import com.human.tapMMO.runtime.game.Position;
 import com.human.tapMMO.model.tables.ItemPosition;
 import com.human.tapMMO.model.tables.Mob;
 import lombok.Getter;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -33,7 +31,7 @@ public class GameLoopService implements InitializingBean, DisposableBean {
 
     public void init(List<Mob> initMobs, List<ItemPosition> initItems, Function<List<MobDTO>, List<MobDTO>> sendUpdatedMob) {
         this.sendUpdatedMob = sendUpdatedMob;
-        for (Mob mob: initMobs) {
+        for (Mob mob : initMobs) {
             var newMob = new MobDTO();
             newMob.setHealth(mob.getHealth());
             newMob.setX(mob.getX());
@@ -41,7 +39,7 @@ public class GameLoopService implements InitializingBean, DisposableBean {
             newMob.setId(mob.getId());
             mobList.put(mob.getId(), newMob);
         }
-        for (ItemPosition item: initItems) {
+        for (ItemPosition item : initItems) {
             itemList.put(item.getId(), item);
         }
     }
@@ -70,7 +68,7 @@ public class GameLoopService implements InitializingBean, DisposableBean {
     }
 
     private void update() {
-        for (MobDTO mob: mobList.values()) {
+        for (MobDTO mob : mobList.values()) {
             mob.update(playerList);
         }
         sendUpdatedMob.apply(new ArrayList<>(mobList.values()));
@@ -90,8 +88,29 @@ public class GameLoopService implements InitializingBean, DisposableBean {
         itemList.put(item.getItemId(), item);
     }
 
-    public void deleteItem(long id) {
-        itemList.remove(id);
+    public void deleteItem(long itemId) {
+        itemList.remove(itemId);
+    }
+
+    public void deleteMob(long mobId) {
+        mobList.remove(mobId);
+    }
+
+    public void addNewMob(Mob mob) {
+        var newMob = new MobDTO();
+        newMob.setHealth(mob.getHealth());
+        newMob.setX(mob.getX());
+        newMob.setY(mob.getY());
+        newMob.setId(mob.getId());
+        mobList.put(mob.getId(), newMob);
+    }
+
+    public boolean dealDamageToMob(long entityId, int value) {
+        final var result = mobList.get(entityId).dealDamage(value);
+        if (result) {
+            deleteMob(entityId);
+        }
+        return result;
     }
 
     public void updatePlayer(Position newData) {

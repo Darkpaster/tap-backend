@@ -1,7 +1,7 @@
 package com.human.tapMMO.controller;
 
 import com.human.tapMMO.model.tables.ItemPosition;
-import com.human.tapMMO.service.ItemService;
+import com.human.tapMMO.service.game.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

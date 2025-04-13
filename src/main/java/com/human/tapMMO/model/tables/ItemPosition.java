@@ -24,4 +24,7 @@ public class ItemPosition {
     private int x;
     @Column(name = "y", nullable = false, updatable = false)
     private int y;
+
+    @Column(name = "equip_slot", updatable = false)
+    private byte equipSlot;
 }

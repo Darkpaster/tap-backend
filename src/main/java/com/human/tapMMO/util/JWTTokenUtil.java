@@ -1,7 +1,6 @@
 package com.human.tapMMO.util;
 
-import com.human.tapMMO.dto.UserDTO;
-import com.human.tapMMO.service.CustomUserDetailsService;
+import com.human.tapMMO.service.auth.CustomUserDetailsService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
