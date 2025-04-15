@@ -17,6 +17,6 @@ public class ChatMessage {
 //    private LocalDateTime timestamp;
 
     public enum MessageType {
-        DEFAULT, ADMIN
+        DEFAULT, ADMIN, SYSTEM
     }
 }

@@ -17,8 +17,8 @@ public class Profession {
     @Column(name = "character_id", updatable = false, nullable = false)
     private Long characterId;
 
-    @Column(name = "title", nullable = false)
-    private String title;
+    @Column(name = "name", nullable = false)
+    private String name;
 
     @Column(name = "level", nullable = false)
     private int level = 1;

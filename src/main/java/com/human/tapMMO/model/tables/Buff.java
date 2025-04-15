@@ -14,8 +14,8 @@ public class Buff {
     @Column(name = "id", unique = true, updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "buff_type", updatable = false, nullable = false)
-    private String buffType;
+    @Column(name = "name", updatable = false, nullable = false)
+    private String name;
 
     @Column(name = "seconds_left", nullable = false)
     private int secondsLeft;

@@ -90,4 +90,44 @@ public class PlayerService {
     }
 
 
+
+    public boolean hasRequiredLevel(Long characterId, int requiredLevel) {
+        // Проверка достаточного уровня персонажа
+        return true; // Заглушка
+    }
+
+    public boolean hasRequiredAttributeLevel(Long characterId, String attributeName, int requiredValue) {
+        // Проверка достаточного уровня атрибута
+        return true; // Заглушка
+    }
+
+    public boolean hasRequiredSkillExperience(Long characterId, String skillName, int requiredValue) {
+        // Проверка достаточного опыта в навыке
+        return true; // Заглушка
+    }
+
+    public boolean hasTalent(Long characterId, Long talentId) {
+        // Проверка наличия таланта
+        return true; // Заглушка
+    }
+
+    public boolean hasCompletedQuest(Long characterId, String questId) {
+        // Проверка завершения квеста
+        return true; // Заглушка
+    }
+
+    public boolean hasItem(Long characterId, String itemId, int quantity) {
+        // Проверка наличия предмета
+        return true; // Заглушка
+    }
+
+    public void addTalentToCharacter(Long characterId, Talent talent) {
+        // Добавление таланта персонажу
+    }
+
+    public void applyAttributeModifier(Long characterId, String attributeName, double value) {
+        // Применение модификатора атрибута
+    }
+
+
 }

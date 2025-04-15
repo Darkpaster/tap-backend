@@ -32,6 +32,6 @@ public class Mob {
     @Pattern(regexp = "dead|alive")
     private String state = "alive";
 
-    @Column(name = "mob_type", nullable = false, updatable = false)
-    private String mobType = "blueSlime";
+    @Column(name = "name", nullable = false, updatable = false)
+    private String name = "blueSlime";
 }
