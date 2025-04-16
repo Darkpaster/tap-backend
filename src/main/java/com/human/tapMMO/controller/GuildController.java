@@ -1,7 +1,7 @@
 package com.human.tapMMO.controller;
 
 import com.human.tapMMO.model.tables.Guild;
-import com.human.tapMMO.runtime.game.actor.player.Player;
+import com.human.tapMMO.runtime.game.actors.player.Player;
 import com.human.tapMMO.service.game.GuildService;
 import com.human.tapMMO.service.game.PlayerService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/guilds")
+@RequestMapping("/guild")
 @RequiredArgsConstructor
 public class GuildController {
     private final GuildService guildService;

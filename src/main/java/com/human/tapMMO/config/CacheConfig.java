@@ -6,17 +6,17 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
-@Configuration
-@EnableCaching
+//@Configuration
+//@EnableCaching
 public class CacheConfig {
-
-    @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(10));
-
-        return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(cacheConfig)
-                .build();
-    }
+//
+//    @Bean
+//    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+//        RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
+//                .entryTtl(Duration.ofMinutes(10));
+//
+//        return RedisCacheManager.builder(connectionFactory)
+//                .cacheDefaults(cacheConfig)
+//                .build();
+//    }
 }

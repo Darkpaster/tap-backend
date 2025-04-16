@@ -1,7 +1,7 @@
 package com.human.tapMMO.controller;
 
 import com.human.tapMMO.model.tables.Group;
-import com.human.tapMMO.runtime.game.actor.player.Player;
+import com.human.tapMMO.runtime.game.actors.player.Player;
 import com.human.tapMMO.service.game.GroupService;
 import com.human.tapMMO.service.game.PlayerService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/groups")
+@RequestMapping("/group")
 @RequiredArgsConstructor
 public class GroupController {
     private final GroupService groupService;

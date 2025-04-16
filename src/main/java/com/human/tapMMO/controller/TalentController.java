@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/talents")
+@RequestMapping("/talent")
 public class TalentController {
 
     private final TalentService talentService;

@@ -1,7 +1,7 @@
 package com.human.tapMMO.service.game;
 
-import com.human.tapMMO.runtime.game.actor.Actor;
-import com.human.tapMMO.runtime.game.buff.Buff;
+import com.human.tapMMO.runtime.game.actors.Actor;
+import com.human.tapMMO.runtime.game.buffs.Buff;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

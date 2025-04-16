@@ -1,12 +1,12 @@
 package com.human.tapMMO.controller;
 
+import com.human.tapMMO.model.tables.EquippedItem;
+import com.human.tapMMO.model.tables.InventoryItem;
 import com.human.tapMMO.model.tables.ItemPosition;
 import com.human.tapMMO.service.game.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -21,5 +21,36 @@ public class ItemController {
     public ResponseEntity<List<ItemPosition>> initAllMobs() {
         System.out.println("items init");
         return ResponseEntity.ok(itemService.initAllItems());
+    }
+
+
+    @PostMapping("/equipItem")
+    public ResponseEntity equipItem(@RequestBody InventoryItem inventoryItem) {
+        itemService.equipItem(inventoryItem);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/unequipItem")
+    public ResponseEntity unequipItem(@RequestBody EquippedItem equippedItem, short inventorySlot) {
+        itemService.unequipItem(equippedItem, inventorySlot);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/dropItem")
+    public ResponseEntity dropItem(@RequestBody InventoryItem inventoryItem, ItemPosition itemPosition) {
+        itemService.dropItem(inventoryItem, itemPosition);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/pickUpItem")
+    public ResponseEntity pickUpItem(@RequestBody InventoryItem inventoryItem) {
+        itemService.pickUpItem(inventoryItem);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/lootItem")
+    public ResponseEntity lootItem(@RequestBody ItemPosition itemPosition) {
+        itemService.lootItem(itemPosition);
+        return ResponseEntity.ok().build();
     }
 }

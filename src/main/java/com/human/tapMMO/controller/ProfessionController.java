@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/professions")
+@RequestMapping("/profession")
 @RequiredArgsConstructor
 public class ProfessionController {
 

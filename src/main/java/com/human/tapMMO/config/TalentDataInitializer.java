@@ -2,7 +2,7 @@ package com.human.tapMMO.config;
 
 import com.human.tapMMO.model.tables.Talent;
 import com.human.tapMMO.repository.TalentRepository;
-import com.human.tapMMO.runtime.game.buff.Buff;
+import com.human.tapMMO.runtime.game.buffs.Buff;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

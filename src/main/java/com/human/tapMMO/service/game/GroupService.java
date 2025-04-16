@@ -1,9 +1,8 @@
 package com.human.tapMMO.service.game;
 
 import com.human.tapMMO.model.tables.Group;
-import com.human.tapMMO.repository.GroupMemberRepository;
 import com.human.tapMMO.repository.GroupRepository;
-import com.human.tapMMO.runtime.game.actor.player.Player;
+import com.human.tapMMO.runtime.game.actors.player.Player;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.crossstore.ChangeSetPersister;

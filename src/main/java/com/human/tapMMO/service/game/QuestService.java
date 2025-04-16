@@ -1,7 +1,7 @@
 package com.human.tapMMO.service.game;
 
-import com.human.tapMMO.runtime.game.quest.*;
-import com.human.tapMMO.runtime.game.quest.requirement.QuestRequirement;
+import com.human.tapMMO.runtime.game.quests.*;
+import com.human.tapMMO.runtime.game.quests.requirement.QuestRequirement;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;

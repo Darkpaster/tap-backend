@@ -61,33 +61,4 @@ public class PlayerController {
         return ResponseEntity.ok().build();
     }
 
-//    @PostMapping("/equipItem")
-//    public ResponseEntity equipItem(@RequestBody InventoryItem inventoryItem) {
-//        itemService.equipItem(inventoryItem);
-//        return ResponseEntity.ok().build();
-//    }
-//
-//    @PostMapping("/unequipItem")
-//    public ResponseEntity unequipItem(@RequestBody EquippedItem equippedItem, short inventorySlot) {
-//        itemService.unequipItem(equippedItem, inventorySlot);
-//        return ResponseEntity.ok().build();
-//    }
-//
-//    @PostMapping("/dropItem")
-//    public ResponseEntity dropItem(@RequestBody InventoryItem inventoryItem, ItemPosition itemPosition) {
-//        itemService.dropItem(inventoryItem, itemPosition);
-//        return ResponseEntity.ok().build();
-//    }
-//
-//    @PostMapping("/pickUpItem")
-//    public ResponseEntity pickUpItem(@RequestBody InventoryItem inventoryItem) {
-//        itemService.pickUpItem(inventoryItem);
-//        return ResponseEntity.ok().build();
-//    }
-//
-//    @PostMapping("/lootItem")
-//    public ResponseEntity lootItem(@RequestBody ItemPosition itemPosition) {
-//        itemService.lootItem(itemPosition);
-//        return ResponseEntity.ok().build();
-//    }
 }

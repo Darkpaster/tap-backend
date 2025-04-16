@@ -3,7 +3,7 @@ package com.human.tapMMO.service.game;
 import com.human.tapMMO.model.game.TalentRequirementType;
 import com.human.tapMMO.model.tables.Talent;
 import com.human.tapMMO.repository.TalentRepository;
-import com.human.tapMMO.runtime.game.buff.Buff;
+import com.human.tapMMO.runtime.game.buffs.Buff;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

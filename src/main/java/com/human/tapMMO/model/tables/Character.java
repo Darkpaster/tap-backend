@@ -50,6 +50,6 @@ public class Character {
     @Column(name = "creation_date", nullable = false, updatable = false)
     private LocalDateTime creationDate = LocalDateTime.now();
 
-    @Column(name = "last_login", nullable = false)
-    private LocalDateTime lastLogin = LocalDateTime.now();
+    @Column(name = "last_online", nullable = false)
+    private LocalDateTime lastOnline = LocalDateTime.now();
 }

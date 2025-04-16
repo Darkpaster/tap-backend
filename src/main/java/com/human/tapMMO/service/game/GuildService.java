@@ -6,7 +6,7 @@ import com.human.tapMMO.model.tables.GuildBank;
 import com.human.tapMMO.model.tables.GuildLog;
 import com.human.tapMMO.repository.GuildLogRepository;
 import com.human.tapMMO.repository.GuildRepository;
-import com.human.tapMMO.runtime.game.actor.player.Player;
+import com.human.tapMMO.runtime.game.actors.player.Player;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,8 +1,8 @@
 package com.human.tapMMO.service.game;
 
 import com.human.tapMMO.model.game.world.TiledWorldLoader;
-import com.human.tapMMO.runtime.game.actor.Actor;
-import com.human.tapMMO.runtime.game.actor.player.Player;
+import com.human.tapMMO.runtime.game.actors.Actor;
+import com.human.tapMMO.runtime.game.actors.player.Player;
 import com.human.tapMMO.runtime.game.world.TiledMap;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
