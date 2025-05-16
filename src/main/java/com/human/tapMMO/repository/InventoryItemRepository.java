@@ -13,4 +13,6 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, Lo
     Optional<List<InventoryItem>> findAllByCharacterId(long characterId);
 
     long deleteAllByCharacterId(long characterId);
+
+    long deleteByItemId(long itemId);
 }

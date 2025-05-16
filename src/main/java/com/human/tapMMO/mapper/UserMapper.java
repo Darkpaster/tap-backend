@@ -1,6 +1,6 @@
 package com.human.tapMMO.mapper;
 
-import com.human.tapMMO.dto.UserDTO;
+import com.human.tapMMO.dto.rest.UserDTO;
 import com.human.tapMMO.model.tables.Account;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;

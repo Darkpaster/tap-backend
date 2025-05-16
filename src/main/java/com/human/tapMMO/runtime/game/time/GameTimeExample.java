@@ -1,6 +1,6 @@
 package com.human.tapMMO.runtime.game.time;
 
-import com.human.tapMMO.service.game.GameTimeService;
+import com.human.tapMMO.service.game.world.GameTimeService;
 
 import java.time.temporal.ChronoUnit;
 

@@ -17,12 +17,3 @@ public class Reward {
 
 }
 
-// Тип награды
-enum RewardType {
-    EXPERIENCE, GOLD, ITEM, REPUTATION
-}
-
-// Статус квеста
-public enum QuestStatus {
-    NOT_STARTED, IN_PROGRESS, COMPLETED, FAILED
-}

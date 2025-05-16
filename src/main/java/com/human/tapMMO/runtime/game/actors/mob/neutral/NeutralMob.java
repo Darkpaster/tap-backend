@@ -6,14 +6,15 @@ import com.human.tapMMO.runtime.game.actors.mob.MobState;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+
 @Getter
 @Setter
 public class NeutralMob extends Mob {
     private Actor lastAttacker;
     private int peacefulTimer;
 
-    public NeutralMob(String name, int health, int level, int aggroRange, int experienceValue) {
-        super(name, health, level, aggroRange, experienceValue);
+    public NeutralMob() {
         this.lastAttacker = null;
         this.peacefulTimer = 0;
     }
@@ -46,10 +47,12 @@ public class NeutralMob extends Mob {
         }
     }
 
+
     @Override
-    public void updateAI() {
+    public <T extends Actor> Mob update(HashMap<Long, T> players) {
         updatePeacefulTimer(1); // Предполагаем, что метод вызывается каждую секунду
-        super.updateAI();
+        super.update(players);
+        return this;
     }
 
     @Override

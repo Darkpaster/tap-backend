@@ -10,20 +10,23 @@ import lombok.Setter;
 @Setter
 public abstract class Actor {
     private long id;
-    private String name;
-    private int health;
-    private int maxHealth;
-    private int level;
-    private boolean alive;
-//    private Position position;
+    protected String name;
+    protected int health;
+    protected int maxHealth;
+    protected byte speed = 2;
+    protected String renderState = ActorRenderStates.IDLE;
+    protected Actor target = null;
+    protected int level;
+    protected boolean alive;
+    protected float x;
+    protected float y;
 
-    public Actor(String name, int health, int level) {
-        this.name = name;
-        this.health = health;
+    public Actor() {
+        this.name = "Unknown";
+        this.health = 100;
         this.maxHealth = health;
-        this.level = level;
+        this.level = 1;
         this.alive = true;
-//        this.position = new Position(0, 0, 0);
     }
 
     public void takeDamage(int damage) {
@@ -32,6 +35,7 @@ public abstract class Actor {
         health -= damage;
         if (health <= 0) {
             health = 0;
+            this.renderState = ActorRenderStates.DEATH;
             alive = false;
             onDeath();
         }

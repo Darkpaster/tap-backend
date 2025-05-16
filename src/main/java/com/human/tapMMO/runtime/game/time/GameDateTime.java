@@ -2,6 +2,8 @@ package com.human.tapMMO.runtime.game.time;
 
 import lombok.Getter;
 
+import java.util.Random;
+
 @Getter
 public class GameDateTime {
     // Геттеры
@@ -179,17 +181,3 @@ public class GameDateTime {
     }
 }
 
-// Фазы дня
-public enum DayPhase {
-    DAWN, MORNING, NOON, AFTERNOON, EVENING, NIGHT
-}
-
-// Сезоны
-public enum Season {
-    SPRING, SUMMER, AUTUMN, WINTER
-}
-
-// Типы погоды
-public enum Weather {
-    SUNNY, CLOUDY, RAINY, SNOWY, FOGGY, STORMY
-}

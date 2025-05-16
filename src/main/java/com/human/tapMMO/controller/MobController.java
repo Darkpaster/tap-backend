@@ -1,7 +1,7 @@
 package com.human.tapMMO.controller;
 
-import com.human.tapMMO.model.tables.Mob;
-import com.human.tapMMO.service.game.MobService;
+import com.human.tapMMO.model.tables.MobModel;
+import com.human.tapMMO.service.game.world.MobService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +16,7 @@ public class MobController {
 
 //    private final List<DeferredResult<String>> clients = new CopyOnWriteArrayList<>();
     @GetMapping("/init")
-    public ResponseEntity<List<Mob>> initAllMobs() {
+    public ResponseEntity<List<MobModel>> initAllMobs() {
 //        mobService.updateDB();
         var mobs = mobService.initAllMobs();
         System.out.println("mobs init: "+mobs.size());

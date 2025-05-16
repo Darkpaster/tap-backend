@@ -3,6 +3,11 @@ package com.human.tapMMO.runtime.game.quests;
 import com.human.tapMMO.runtime.game.quests.requirement.QuestRequirement;
 import lombok.Getter;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Getter
 public class QuestNode {
     // Геттеры и сеттеры
@@ -29,11 +34,3 @@ public class QuestNode {
     public void addReward(Reward reward) { this.rewards.put(reward.getId(), reward); }
 }
 
-// Тип узла квеста
-enum QuestNodeType {
-    DIALOGUE, // Диалог с NPC
-    BATTLE,   // Сражение с врагами
-    PUZZLE,   // Головоломка
-    COLLECTION, // Сбор предметов
-    DECISION  // Точка принятия решения
-}

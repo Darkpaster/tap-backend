@@ -17,14 +17,8 @@ public class ItemPosition {
     @Column(name = "item_id", updatable = false, nullable = false, unique = true)
     private Long itemId;
 
-    @Column(name = "name", nullable = false)
-    private String name = "smallPotionOfHealing";
-
     @Column(name = "x", nullable = false, updatable = false)
-    private int x;
+    private float x;
     @Column(name = "y", nullable = false, updatable = false)
-    private int y;
-
-    @Column(name = "equip_slot", updatable = false)
-    private byte equipSlot;
+    private float y;
 }

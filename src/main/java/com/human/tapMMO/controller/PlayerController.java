@@ -4,7 +4,7 @@ import com.human.tapMMO.model.connection.InitCharacterConnection;
 import com.human.tapMMO.model.tables.*;
 import com.human.tapMMO.model.tables.Character;
 import com.human.tapMMO.service.auth.CustomUserDetailsService;
-import com.human.tapMMO.service.game.PlayerService;
+import com.human.tapMMO.service.game.player.PlayerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,6 +1,5 @@
 package com.human.tapMMO.runtime.game.world;
 
-import com.human.tapMMO.model.game.world.TiledTileset;
 import lombok.Getter;
 
 import java.util.ArrayList;

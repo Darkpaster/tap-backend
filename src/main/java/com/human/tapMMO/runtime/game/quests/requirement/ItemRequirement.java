@@ -2,7 +2,7 @@ package com.human.tapMMO.runtime.game.quests.requirement;
 
 import com.human.tapMMO.runtime.game.quests.PlayerContext;
 
-class ItemRequirement implements QuestRequirement {
+public class ItemRequirement implements QuestRequirement {
     private String itemId;
     private int quantity;
 

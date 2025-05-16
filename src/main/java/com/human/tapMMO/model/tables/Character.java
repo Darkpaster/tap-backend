@@ -21,9 +21,9 @@ public class Character {
     private Long accountId;
 
     @Column(name = "x", nullable = false)
-    private int x = 64 * -2;
+    private float x = 64 * -2;
     @Column(name = "y", nullable = false)
-    private int y = 64 * -6;
+    private float y = 64 * -6;
 
     @Column(name = "nickname", nullable = false, unique = true)
     private String nickname;

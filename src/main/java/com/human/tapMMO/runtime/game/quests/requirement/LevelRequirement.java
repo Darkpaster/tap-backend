@@ -2,7 +2,7 @@ package com.human.tapMMO.runtime.game.quests.requirement;
 
 import com.human.tapMMO.runtime.game.quests.PlayerContext;
 
-class LevelRequirement implements QuestRequirement {
+public class LevelRequirement implements QuestRequirement {
     private int requiredLevel;
 
     public LevelRequirement(int requiredLevel) {

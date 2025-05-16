@@ -12,8 +12,7 @@ public class NPC extends Actor {
     private boolean questGiver;
     private boolean merchant;
 
-    public NPC(String name, int health, int level, String[] dialogue) {
-        super(name, health, level);
+    public NPC(String[] dialogue) {
         this.state = NPCState.IDLE;
         this.dialogue = dialogue;
         this.questGiver = false;

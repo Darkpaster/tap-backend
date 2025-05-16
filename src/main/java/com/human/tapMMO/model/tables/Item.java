@@ -1,6 +1,7 @@
 package com.human.tapMMO.model.tables;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
@@ -16,6 +17,7 @@ public class Item {
     private Long id;
     @Column(name = "name", nullable = false, updatable = false)
     private String name;
-    @Column(name = "equip_slot", updatable = false)
-    private byte equipSlot;
+    @Column(name = "equipment_slot", updatable = false)
+    @Pattern(regexp = "head|shoulders|body|cape|braces|weapon1|weapon2|weapon1&2|gloves|belt|legs|boots|ring|accessory|none")
+    private String equipmentSlot;
 }

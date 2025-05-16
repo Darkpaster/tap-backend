@@ -5,27 +5,28 @@ import com.human.tapMMO.runtime.game.actors.mob.Mob;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+
 @Getter
 @Setter
 public class Enemy extends Mob {
     private boolean isFleeing;
     private int fleeHealthThreshold;
 
-    public Enemy(String name, int health, int level, int aggroRange, int experienceValue) {
-        super(name, health, level, aggroRange, experienceValue);
+    public Enemy() {
         this.isFleeing = false;
-        this.fleeHealthThreshold = health / 5; // Моб начинает убегать при 20% здоровья
+        this.fleeHealthThreshold = this.health / 5; // Моб начинает убегать при 20% здоровья
     }
 
     @Override
     public void attack(Actor target) {
         // Базовая атака врага
-        int damage = getLevel() * 5;
+        int damage = (int) (level * Math.random() * 5);
         target.takeDamage(damage);
     }
 
     @Override
-    public void updateAI() {
+    public <T extends Actor> Mob update(HashMap<Long, T> players) {
         // Проверка условия для бегства
         if (getHealth() < fleeHealthThreshold && !isFleeing) {
             isFleeing = true;
@@ -36,8 +37,9 @@ public class Enemy extends Mob {
         if (isFleeing) {
             fleeBehavior();
         } else {
-            super.updateAI();
+            super.update(players);
         }
+        return this;
     }
 
     private void fleeBehavior() {

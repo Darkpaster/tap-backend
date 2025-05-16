@@ -6,6 +6,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 public class Auction {
@@ -50,7 +51,3 @@ public class Auction {
     }
 }
 
-// Статус аукциона
-public enum AuctionStatus {
-    ACTIVE, COMPLETED, CANCELLED
-}

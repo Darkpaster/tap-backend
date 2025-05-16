@@ -54,8 +54,3 @@ public class ScheduledGameEvent {
     }
 }
 
-// Тип игрового события
-enum GameEventType {
-    QUEST, NPC_MOVEMENT, SHOP_RESTOCK, DUNGEON_RESET, WORLD_BOSS, WEATHER_CHANGE, FESTIVAL
-}
-

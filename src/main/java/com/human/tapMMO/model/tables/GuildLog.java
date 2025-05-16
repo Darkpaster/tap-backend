@@ -26,9 +26,9 @@ public class GuildLog {
 
     @ManyToOne
     @JoinColumn(name = "actor_id")
-    private Player actor;
+    private Character actor;
 
     @ManyToOne
     @JoinColumn(name = "target_id")
-    private Player target;
+    private Character target;
 }

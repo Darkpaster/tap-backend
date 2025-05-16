@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface GuildLogRepository extends JpaRepository<GuildLog, Long> {
-    Page<GuildLog> findByGuildIdOrderByCreatedAtDesc(Long guildId, Pageable pageable);
+//    Page<GuildLog> findByGuildIdOrderByCreatedAtDesc(Long guildId, Pageable pageable);
 
 }

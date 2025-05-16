@@ -1,6 +1,6 @@
 package com.human.tapMMO.model.tables;
 
-import com.human.tapMMO.model.game.AchievementType;
+import com.human.tapMMO.runtime.game.achievements.AchievementType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

@@ -1,6 +1,6 @@
 package com.human.tapMMO.controller;
 
-import com.human.tapMMO.dto.UserDTO;
+import com.human.tapMMO.dto.rest.UserDTO;
 import com.human.tapMMO.service.auth.AuthService;
 import com.human.tapMMO.service.auth.CustomUserDetailsService;
 import com.human.tapMMO.util.JWTTokenUtil;

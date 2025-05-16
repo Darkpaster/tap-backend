@@ -21,10 +21,3 @@ public class GameTimeEvent extends ApplicationEvent {
     }
 }
 
-// Тип события
-public enum GameTimeEventType {
-    MINUTE_PASSED, HOUR_PASSED, DAY_PASSED, WEEK_PASSED, MONTH_PASSED, YEAR_PASSED,
-    DAWN, MORNING, NOON, AFTERNOON, EVENING, MIDNIGHT,
-    SEASON_CHANGED, WEATHER_CHANGED
-}
-

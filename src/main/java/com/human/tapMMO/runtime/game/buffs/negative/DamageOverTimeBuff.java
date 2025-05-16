@@ -1,5 +1,6 @@
 package com.human.tapMMO.runtime.game.buffs.negative;
 
+import com.human.tapMMO.runtime.game.actors.Actor;
 import com.human.tapMMO.runtime.game.buffs.Buff;
 import lombok.Getter;
 import lombok.Setter;

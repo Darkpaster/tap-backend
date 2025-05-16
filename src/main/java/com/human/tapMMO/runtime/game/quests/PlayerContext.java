@@ -2,8 +2,13 @@ package com.human.tapMMO.runtime.game.quests;
 
 import lombok.Getter;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 @Getter
-public public class PlayerContext {
+public class PlayerContext {
     // Геттеры и сеттеры
     private String playerId;
     private Map<String, Integer> stats;

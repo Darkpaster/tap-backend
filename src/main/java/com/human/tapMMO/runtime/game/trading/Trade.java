@@ -4,9 +4,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 public class Trade {
@@ -140,10 +138,5 @@ public class Trade {
     public boolean isReadyToComplete() {
         return initiatorAccepted && targetAccepted;
     }
-}
-
-// Статус обмена
-public enum TradeStatus {
-    PENDING, COMPLETED, CANCELLED, EXPIRED
 }
 

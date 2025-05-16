@@ -1,5 +1,6 @@
 package com.human.tapMMO.model.tables;
 
+import com.human.tapMMO.runtime.game.social.friends.FriendRequestStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
@@ -21,21 +22,23 @@ public class FriendRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id")
-    @ToString.Exclude
+    //    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "sender_id")
+//    @ToString.Exclude
+    @Column(name = "sender_id", nullable = false)
     private Long senderId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "receiver_id")
-    @ToString.Exclude
+    //    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "receiver_id")
+//    @ToString.Exclude
+    @Column(name = "receiver_id", nullable = false)
     private Long receiverId;
 
     @Enumerated(EnumType.STRING)
     private FriendRequestStatus status;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;

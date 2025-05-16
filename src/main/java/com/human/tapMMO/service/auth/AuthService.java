@@ -1,6 +1,6 @@
 package com.human.tapMMO.service.auth;
 
-import com.human.tapMMO.dto.UserDTO;
+import com.human.tapMMO.dto.rest.UserDTO;
 import com.human.tapMMO.mapper.UserMapper;
 import com.human.tapMMO.model.tables.Account;
 import com.human.tapMMO.repository.AccountRepository;

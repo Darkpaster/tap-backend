@@ -1,9 +1,10 @@
 package com.human.tapMMO.controller;
 
+import com.human.tapMMO.dto.rest.ItemDTO;
 import com.human.tapMMO.model.tables.EquippedItem;
 import com.human.tapMMO.model.tables.InventoryItem;
 import com.human.tapMMO.model.tables.ItemPosition;
-import com.human.tapMMO.service.game.ItemService;
+import com.human.tapMMO.service.game.player.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +26,8 @@ public class ItemController {
 
 
     @PostMapping("/equipItem")
-    public ResponseEntity equipItem(@RequestBody InventoryItem inventoryItem) {
-        itemService.equipItem(inventoryItem);
+    public ResponseEntity equipItem(@RequestBody ItemDTO itemDTO) {
+        itemService.equipItem(itemDTO);
         return ResponseEntity.ok().build();
     }
 
@@ -37,8 +38,8 @@ public class ItemController {
     }
 
     @PostMapping("/dropItem")
-    public ResponseEntity dropItem(@RequestBody InventoryItem inventoryItem, ItemPosition itemPosition) {
-        itemService.dropItem(inventoryItem, itemPosition);
+    public ResponseEntity dropItem(@RequestBody ItemDTO itemDTO) {
+        itemService.dropItem(itemDTO);
         return ResponseEntity.ok().build();
     }
 
@@ -49,8 +50,8 @@ public class ItemController {
     }
 
     @PostMapping("/lootItem")
-    public ResponseEntity lootItem(@RequestBody ItemPosition itemPosition) {
-        itemService.lootItem(itemPosition);
+    public ResponseEntity lootItem(@RequestBody ItemDTO itemDTO) {
+        itemService.lootItem(itemDTO);
         return ResponseEntity.ok().build();
     }
 }

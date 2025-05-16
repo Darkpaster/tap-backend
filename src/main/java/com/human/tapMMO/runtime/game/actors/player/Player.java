@@ -9,8 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Getter
 public class Player extends Actor {
-    private final String username;
+    // Геттеры и сеттеры
     private int experience;
     private int nextLevelExperience;
     private final Map<String, Integer> stats;
@@ -19,9 +20,8 @@ public class Player extends Actor {
     private int gold;
     private final List<Quest> activeQuests;
 
-    public Player(String name, String username) {
-        super(name, 100, 1); // Начальное здоровье 100, уровень 1
-        this.username = username;
+    public Player(String name) {
+        this.name = name;
         this.experience = 0;
         this.nextLevelExperience = 100; // Опыт для 2-го уровня
 
@@ -135,39 +135,6 @@ public class Player extends Actor {
             return true;
         }
         return false;
-    }
-
-    // Геттеры и сеттеры
-    public String getUsername() {
-        return username;
-    }
-
-    public int getExperience() {
-        return experience;
-    }
-
-    public int getNextLevelExperience() {
-        return nextLevelExperience;
-    }
-
-    public Map<String, Integer> getStats() {
-        return stats;
-    }
-
-    public List<Item> getInventory() {
-        return inventory;
-    }
-
-    public Equipment getEquipment() {
-        return equipment;
-    }
-
-    public int getGold() {
-        return gold;
-    }
-
-    public List<Quest> getActiveQuests() {
-        return activeQuests;
     }
 
     // Внутренние классы для инвентаря и снаряжения

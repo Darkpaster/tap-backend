@@ -12,8 +12,7 @@ public class Boss extends Mob {
     private int enrageTimer;
     private boolean enraged;
 
-    public Boss(String name, int health, int level, int aggroRange, int experienceValue) {
-        super(name, health, level, aggroRange, experienceValue);
+    public Boss() {
         this.abilities = new ArrayList<>();
         this.phaseCounter = 1;
         this.enrageTimer = 300; // 5 минут до ярости
