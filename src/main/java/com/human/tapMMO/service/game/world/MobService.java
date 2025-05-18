@@ -1,7 +1,10 @@
 package com.human.tapMMO.service.game.world;
 
+import com.human.tapMMO.dto.websocket.ActorDTO;
+import com.human.tapMMO.mapper.ActorMapper;
 import com.human.tapMMO.model.tables.MobModel;
 import com.human.tapMMO.repository.MobRepository;
+import com.human.tapMMO.runtime.game.actors.mob.Mob;
 import com.human.tapMMO.runtime.game.world.MapManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,11 +13,13 @@ import java.awt.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class MobService {
     private final MobRepository mobRepository;
+    private final ActorMapper actorMapper;
 
     public void die(long mobId) {
         var mob = mobRepository.findById(mobId).orElseThrow(() -> new NoSuchElementException("mob dies"));
@@ -31,7 +36,8 @@ public class MobService {
             newMob.setX(mob.x);
             newMob.setY(mob.y);
             newMob.setName(mob.name);
-            mobRepository.saveAndFlush(newMob);
+            newMob.setHealth(Mob.createMob(mob.name).getHealth());
+            mobRepository.save(newMob);
         }
     }
 
@@ -42,8 +48,8 @@ public class MobService {
 //    }
 
 
-    public List<MobModel> initAllMobs() { //при инициализации мира
-        return mobRepository.findAllByState("alive");
+    public List<ActorDTO> initAllMobs() { //при инициализации мира
+        return actorMapper.toActorDTO(mobRepository.findAllByState("alive"));
     }
 
 }

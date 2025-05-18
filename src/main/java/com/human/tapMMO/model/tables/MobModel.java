@@ -23,7 +23,7 @@ public class MobModel {
     private float y = 0;
 
     @Column(name = "health", nullable = false)
-    private int health = 50; //обновлять при респавне
+    private int health; //обновлять при респавне
 
     @Column(name = "respawn_time", nullable = false)
     private Instant respawnTime = Instant.now().plusSeconds(10);
@@ -33,5 +33,5 @@ public class MobModel {
     private String state = "alive";
 
     @Column(name = "name", nullable = false, updatable = false)
-    private String name = "blueSlime";
+    private String name;
 }

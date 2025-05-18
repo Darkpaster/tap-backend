@@ -1,5 +1,6 @@
 package com.human.tapMMO.controller;
 
+import com.human.tapMMO.dto.websocket.ActorDTO;
 import com.human.tapMMO.model.tables.MobModel;
 import com.human.tapMMO.service.game.world.MobService;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,7 @@ public class MobController {
 
 //    private final List<DeferredResult<String>> clients = new CopyOnWriteArrayList<>();
     @GetMapping("/init")
-    public ResponseEntity<List<MobModel>> initAllMobs() {
-//        mobService.updateDB();
+    public ResponseEntity<List<ActorDTO>> initAllMobs() {
         var mobs = mobService.initAllMobs();
         System.out.println("mobs init: "+mobs.size());
         return ResponseEntity.ok(mobs);

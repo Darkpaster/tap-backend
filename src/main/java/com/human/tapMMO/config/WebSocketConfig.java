@@ -271,7 +271,7 @@ public class WebSocketConfig {
                 final var mobId = data.getTarget().getTargetId();
                 entityManager.dealDamageToMob(mobId, data.getValue());
             } else {
-                System.out.println("хай");
+                System.out.println("удар по игроку");
             }
         });
 

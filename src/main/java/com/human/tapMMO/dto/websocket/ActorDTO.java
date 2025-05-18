@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 public class ActorDTO {
     private Long actorId;
+    private String name;
     private float x;
     private float y;
     private String renderState;

@@ -32,6 +32,7 @@ public abstract class Mob extends Actor {
         this.aggroRange = GameConfig.TILE_SIZE * 3;
         this.state = MobState.IDLE;
         this.experienceValue = 1;
+        this.health = 100;
     }
 
     public abstract void attack(Actor target);
@@ -83,6 +84,8 @@ public abstract class Mob extends Actor {
         } else if (distance > 16) {
             this.x += (this.target.getX() - this.x) / distance * this.speed;
             this.y += (this.target.getY() - this.y) / distance * this.speed;
+        } else {
+            attack(this.target);
         }
     }
 
@@ -134,9 +137,9 @@ public abstract class Mob extends Actor {
         }
     }
 
-    public static <T extends Mob> T createMob(String name) {
+    public static Mob createMob(String name) {
         switch (name) {
-            case "blueSlime": new BlueSlime();
+            case "Skime": return new BlueSlime();
         }
         return null;
     }

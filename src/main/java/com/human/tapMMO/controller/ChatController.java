@@ -8,14 +8,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 
-@Controller("/chat")
-@RequiredArgsConstructor
+//@Controller("/chat")
+//@RequiredArgsConstructor
 public class ChatController {
 
-    private final SocketIOServer socketIOServer;
-
-    @PostMapping("/sendMessage")
-    public void sendMessage(@RequestBody ChatMessage message) {
-        socketIOServer.getBroadcastOperations().sendEvent("sendMessage", message);
-    }
+//    private final SocketIOServer socketIOServer;
+//
+//    @PostMapping("/sendMessage")
+//    public void sendMessage(@RequestBody ChatMessage message) {
+//        socketIOServer.getBroadcastOperations().sendEvent("sendMessage", message);
+//    }
 }

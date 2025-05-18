@@ -3,7 +3,6 @@ package com.human.tapMMO.runtime.game.world;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.human.tapMMO.runtime.game.config.GameConfig;
-import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Component
 public class MapManager {
@@ -35,19 +33,22 @@ public class MapManager {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public CompletableFuture<Void> init() {
+    public CompletableFuture<Object> init() {
         try {
-            final var future = initWorld();
-            future.thenRun(() -> {
+            return initWorld().thenCompose(v -> {
                 System.out.println("World initialized successfully");
                 debugCheckMap();
+                return CompletableFuture.completedFuture(null);
+            }).exceptionally(e -> {
+                System.err.println("Failed to initialize world: " + e.getMessage());
+                e.printStackTrace();
+                return null;
             });
-            return future;
         } catch (Exception e) {
             System.err.println("Failed to initialize world: " + e.getMessage());
             e.printStackTrace();
+            return CompletableFuture.failedFuture(e);
         }
-        return null;
     }
 
     public WorldMap getWorldMap() {
@@ -55,22 +56,22 @@ public class MapManager {
     }
 
     public CompletableFuture<Void> initWorld() {
-        return CompletableFuture.runAsync(() -> {
+        return CompletableFuture.supplyAsync(() -> {
             try {
                 Resource resource = resourceLoader.getResource("classpath:static/tileMap/world.json");
-                JsonNode json = objectMapper.readTree(resource.getInputStream());
-
-                generateTiles(json).thenRun(() -> {
-                    ParsedLayers parsedLayers = parseLayers(json);
-                    this.backgroundChunks = parsedLayers.backgroundChunks;
-                    this.foregroundChunks = parsedLayers.foregroundChunks;
-                    this.animatedChunks = parsedLayers.animatedChunks;
-//                    this.actorChunks = parsedLayers.actorChunks;
-                });
+                return objectMapper.readTree(resource.getInputStream());
             } catch (IOException e) {
-                System.err.println("Error while parsing map: " + e.getMessage());
-                e.printStackTrace();
+                throw new RuntimeException("Error loading world.json", e);
             }
+        }).thenCompose(json -> {
+            return generateTiles(json).thenApply(v -> json);
+        }).thenApply(json -> {
+            ParsedLayers parsedLayers = parseLayers(json);
+            this.backgroundChunks = parsedLayers.backgroundChunks;
+            this.foregroundChunks = parsedLayers.foregroundChunks;
+            this.animatedChunks = parsedLayers.animatedChunks;
+//            this.actorChunks = parsedLayers.actorChunks;
+            return null;
         });
     }
 
@@ -193,11 +194,11 @@ public class MapManager {
             if (layerNode.has("objects") && layerName.contains("actor")) {
                 JsonNode objectsNode = layerNode.get("objects");
                 for (JsonNode object : objectsNode) {
-                    int x = object.get("x").asInt() / GameConfig.TILE_SIZE;
-                    int y = object.get("y").asInt() / GameConfig.TILE_SIZE;
+                    int x = object.get("x").asInt();
+                    int y = object.get("y").asInt();
                     String name = object.has("name") ? object.get("name").asText() : "Unknown";
 
-                    String key = getTilePosKey(x, y);
+                    String key = getTilePosKey((int) x / GameConfig.TILE_SIZE, (int) y / GameConfig.TILE_SIZE);
 
                     if (!actorChunks.containsKey(key)) {
                         actorChunks.put(key, new ArrayList<>());
@@ -353,6 +354,7 @@ public class MapManager {
         }
 
         System.out.println("=== End Map Debug Info ===");
+        System.out.println("actorList: "+actorList.size());
     }
 
 //    private int[] calculateViewportSize(double tileScale) {

@@ -89,10 +89,10 @@ public class Player extends Actor {
         }
     }
 
-    public void attack(Actor target) {
-        int damage = calculateDamage();
-        target.takeDamage(damage);
-    }
+//    public void attack(Actor target) {
+//        int damage = calculateDamage();
+//        target.takeDamage(damage);
+//    }
 
     private int calculateDamage() {
         // Расчет базового урона на основе характеристик и экипировки

@@ -26,6 +26,7 @@ public class MapController {
 
     @GetMapping("/tiles")
     public ResponseEntity<Map<Integer, Tile>> getTiles() {
+        System.out.println("tiles: "+MapManager.tileList.size());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(MapManager.tileList);
     }

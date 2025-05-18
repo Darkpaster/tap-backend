@@ -33,7 +33,6 @@ public class RespawnService {
         final List<MobModel> mobsToRespawn = mobRepository.findAllByStateAndRespawnTimeBefore("dead", Instant.now());
 
         for(MobModel mob: mobsToRespawn) {
-//            Point newCoords = generateCoordinatesInZone();
             mob.setState("alive");
             mobRepository.saveAndFlush(mob);
             respawnDTO.apply(mob);

@@ -1,5 +1,8 @@
 package com.human.tapMMO.runtime.game.world;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.human.tapMMO.util.BufferedImageBase64Serializer;
+
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +13,10 @@ import java.util.List;
 public class Tile {
     public final String name;
     public final TileProps props;
+
+    @JsonSerialize(using = BufferedImageBase64Serializer.class)
     public final BufferedImage image;
+
     private List<AnimationFrame> animationFrames;
 
     public Tile(String name, TileProps props, BufferedImage image) {

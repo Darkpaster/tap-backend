@@ -39,20 +39,16 @@ public class GameLoopService implements InitializingBean, DisposableBean {
     private final MobService mobService;
 
 
-    public void init(List<MobModel> initMobs, List<ItemPosition> initItems, Function<List<ActorDTO>, List<ActorDTO>> sendUpdatedMob) {
+    public void init(List<ActorDTO> initMobs, List<ItemPosition> initItems, Function<List<ActorDTO>, List<ActorDTO>> sendUpdatedMob) {
         this.sendUpdatedMobs = sendUpdatedMob;
-        for (MobModel mob : initMobs) {
+        for (ActorDTO mob : initMobs) {
             System.out.println("MobName from db: "+mob.getName());
-            final var newMob = Mob.createMob(mob.getName());
-            assert newMob != null;
-            newMob.setX(mob.getX());
-            newMob.setY(mob.getY());
-            newMob.setId(mob.getId());
-            mobList.put(mob.getId(), newMob);
+            addNewMob(mob);
         }
         for (ItemPosition item : initItems) {
-            itemList.put(item.getId(), item);
+            this.itemList.put(item.getId(), item);
         }
+        System.out.println("Amount of mobs in RAM: "+this.mobList.size());
     }
 
     private ScheduledExecutorService scheduler;
@@ -79,20 +75,26 @@ public class GameLoopService implements InitializingBean, DisposableBean {
     }
 
     private void update() {
-        final Mob[] mobList = this.mobList.values().toArray(new Mob[0]);
-        final ActorDTO[] dtoList = new ActorDTO[mobList.length];
-        for (int i = 0; i < mobList.length; i++) {
-            final var mob = mobList[i];
-            mob.update(playerList);
-            final ActorDTO mobDTO = new ActorDTO();
-            mobDTO.setActorId(mob.getId());
-            mobDTO.setX(mob.getX());
-            mobDTO.setY(mob.getY());
-            mobDTO.setHealth(mob.getHealth());
-            mobDTO.setRenderState(mob.getRenderState());
-            dtoList[i] = mobDTO;
+        try {
+            final Mob[] mobList = this.mobList.values().toArray(new Mob[0]);
+            final ActorDTO[] dtoList = new ActorDTO[mobList.length];
+            for (int i = 0; i < mobList.length; i++) {
+                final var mob = mobList[i];
+                mob.update(playerList);
+                final ActorDTO mobDTO = new ActorDTO();
+                mobDTO.setActorId(mob.getId());
+                mobDTO.setX(mob.getX());
+                mobDTO.setY(mob.getY());
+                mobDTO.setHealth(mob.getHealth());
+                mobDTO.setRenderState(mob.getRenderState());
+                dtoList[i] = mobDTO;
+            }
+            if (sendUpdatedMobs != null) {
+                sendUpdatedMobs.apply(List.of(dtoList));
+            }
+        } catch (Exception e) {
+            System.err.println("Ошибка в async "+ e);
         }
-        sendUpdatedMobs.apply(List.of(dtoList));
     }
 
     public void addNewPlayer(InitCharacterConnection player) {
@@ -123,13 +125,21 @@ public class GameLoopService implements InitializingBean, DisposableBean {
     }
 
     public void addNewMob(MobModel mob) {
-        var newMob = Mob.createMob(mob.getName());
+        final var newMob = Mob.createMob(mob.getName());
         assert newMob != null;
-        newMob.setHealth(mob.getHealth());
         newMob.setX(mob.getX());
         newMob.setY(mob.getY());
         newMob.setId(mob.getId());
-        mobList.put(mob.getId(), newMob);
+        this.mobList.put(mob.getId(), newMob);
+    }
+
+    public void addNewMob(ActorDTO mob) {
+        final var newMob = Mob.createMob(mob.getName());
+        assert newMob != null;
+        newMob.setX(mob.getX());
+        newMob.setY(mob.getY());
+        newMob.setId(mob.getActorId());
+        this.mobList.put(mob.getActorId(), newMob);
     }
 
     public void dealDamageToMob(long entityId, int value) {
@@ -144,7 +154,7 @@ public class GameLoopService implements InitializingBean, DisposableBean {
     }
 
     public void updatePlayer(ActorDTO actorDTO) {
-        var link = playerList.get(actorDTO.getActorId());
+        var link = playerList.get(actorDTO.getActorId()); //на клиенте отправляется не DTO, надо фиксить там websocket
         link.setX(actorDTO.getX());
         link.setY(actorDTO.getY());
         link.setHealth(actorDTO.getHealth());
