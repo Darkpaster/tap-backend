@@ -4,26 +4,27 @@ import com.human.tapMMO.runtime.game.actors.Actor;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 public class Player extends Actor {
     // Геттеры и сеттеры
     private int experience;
-    private int nextLevelExperience;
     private final Map<String, Integer> stats;
     private final List<Item> inventory;
     private final Equipment equipment;
-    private int gold;
+    private long gold;
+    private int mana;
+    private int maxMana;
+    private int stamina;
+    private int maxStamina;
     private final List<Quest> activeQuests;
+    @Setter
+    private UUID sessionId;
 
-    public Player(String name) {
-        this.name = name;
+    public Player() {
+        super();
         this.experience = 0;
-        this.nextLevelExperience = 100; // Опыт для 2-го уровня
 
         // Инициализация характеристик
         this.stats = new HashMap<>();
@@ -34,7 +35,7 @@ public class Player extends Actor {
 
         this.inventory = new ArrayList<>();
         this.equipment = new Equipment();
-        this.gold = 0;
+        this.gold = 0L;
         this.activeQuests = new ArrayList<>();
     }
 
@@ -42,15 +43,14 @@ public class Player extends Actor {
         experience += exp;
 
         // Проверка на повышение уровня
-        while (experience >= nextLevelExperience) {
+        while (experience >= level * level + 4) {
             levelUp();
         }
     }
 
     private void levelUp() {
+        experience -= level * level + 4;
         setLevel(getLevel() + 1);
-        experience -= nextLevelExperience;
-        nextLevelExperience = calculateNextLevelExperience();
 
         // Увеличение характеристик
         int healthIncrease = stats.get("vitality") / 2;
@@ -58,6 +58,7 @@ public class Player extends Actor {
         setHealth(getMaxHealth());
 
         // Оповещение о повышении уровня
+
     }
 
     private int calculateNextLevelExperience() {

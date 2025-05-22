@@ -4,6 +4,7 @@ import com.human.tapMMO.model.connection.InitCharacterConnection;
 import com.human.tapMMO.model.tables.*;
 import com.human.tapMMO.model.tables.Character;
 import com.human.tapMMO.service.auth.CustomUserDetailsService;
+import com.human.tapMMO.service.game.GameLoopService;
 import com.human.tapMMO.service.game.player.PlayerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/player")
 public class PlayerController {
     private final PlayerService playerService;
+
+    private final GameLoopService gameLoopService;
+
 //    private final ItemService itemService;
 //    private final MobService mobService;
 
@@ -25,7 +29,7 @@ public class PlayerController {
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetailsService.CustomUserDetails userDetails) {
             return ResponseEntity.ok(playerService.initNewCharacter(init, userDetails.getId()));
         }
-        System.out.println("unauthorized");
+        System.out.println("unauthorized "+init.getName());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
     }
 
@@ -37,6 +41,19 @@ public class PlayerController {
             if (!chars.isEmpty()) {
                 return ResponseEntity.ok(chars);
             }
+        }
+
+        System.out.println("unauthorized");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+    }
+
+    @GetMapping("/getCharData")
+    public ResponseEntity<?> getCharacterData(@RequestParam long characterId, Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetailsService.CustomUserDetails userDetails) {
+            final var characterData = playerService.getAllCharacterData(characterId);
+            gameLoopService.addNewPlayer(characterData);
+            System.out.println("sent char data to " + characterData.getName());
+            return ResponseEntity.ok(characterData);
         }
 
         System.out.println("unauthorized");

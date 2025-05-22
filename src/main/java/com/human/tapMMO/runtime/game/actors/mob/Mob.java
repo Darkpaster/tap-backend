@@ -8,6 +8,7 @@ import com.human.tapMMO.runtime.game.actors.mob.enemy.BlueSlime;
 import com.human.tapMMO.runtime.game.actors.player.Player;
 import com.human.tapMMO.runtime.game.config.GameConfig;
 import com.human.tapMMO.util.Util;
+import com.human.tapMMO.util.time.TimeDelay;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,14 +26,19 @@ public abstract class Mob extends Actor {
     protected int experienceValue;
     protected short aggroRange;
 
+    protected MobServiceList serviceList; //init
+
+    protected TimeDelay autoAttackDelay;
+
     protected Instant timeToWalk = Instant.now().plusSeconds(Util.randomInt(3));
     private byte randomDirection = 0;
 
     public Mob() {
-        this.aggroRange = GameConfig.TILE_SIZE * 3;
+        this.aggroRange = GameConfig.TILE_SIZE * 5;
         this.state = MobState.IDLE;
         this.experienceValue = 1;
         this.health = 100;
+        this.autoAttackDelay = new TimeDelay(2000, true);
     }
 
     public abstract void attack(Actor target);
@@ -47,6 +53,10 @@ public abstract class Mob extends Actor {
                 break;
             case MobState.AGGRO:
                 // Движение к цели и атака
+                if (!players.containsKey(target.getId())) {
+                    System.out.println("Out of range");
+                    target = null;
+                }
                 moveTowardsTarget();
                 break;
             case MobState.RETURNING:
@@ -73,7 +83,7 @@ public abstract class Mob extends Actor {
 
 
     private void moveTowardsTarget() {
-        if (this.getTarget() == null) {
+        if (target == null) {
             this.state = MobState.IDLE;
             return;
         }
@@ -81,11 +91,14 @@ public abstract class Mob extends Actor {
         if (distance > 200) {
             this.state = MobState.IDLE;
             this.setTarget(null);
-        } else if (distance > 16) {
+        } else if (distance > GameConfig.TILE_SIZE) {
             this.x += (this.target.getX() - this.x) / distance * this.speed;
             this.y += (this.target.getY() - this.y) / distance * this.speed;
         } else {
-            attack(this.target);
+            if (this.autoAttackDelay.timeIsUp()) {
+                System.out.println(this.name + "("+this.getId()+") dealt damage to "+this.target.getName()+"("+this.target.getId()+")");
+                attack(this.target);
+            }
         }
     }
 

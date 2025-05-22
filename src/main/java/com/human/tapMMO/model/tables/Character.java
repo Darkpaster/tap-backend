@@ -25,8 +25,8 @@ public class Character {
     @Column(name = "y", nullable = false)
     private float y = 64 * -6;
 
-    @Column(name = "nickname", nullable = false, unique = true)
-    private String nickname;
+    @Column(name = "name", nullable = false, unique = true)
+    private String name;
 
     @Column(name = "level", nullable = false)
     private int level = 1;

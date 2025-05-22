@@ -1,8 +1,11 @@
 package com.human.tapMMO.dto.websocket;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -14,7 +17,8 @@ public class ChatMessage {
     private MessageType type = MessageType.DEFAULT;
     private String roomId;
 //    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
-//    private LocalDateTime timestamp;
+    @JsonIgnore
+    private LocalDateTime timestamp;
 
     public enum MessageType {
         DEFAULT, ADMIN, SYSTEM

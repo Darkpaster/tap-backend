@@ -2,6 +2,7 @@ package com.human.tapMMO.runtime.game.actors.mob.enemy;
 
 import com.human.tapMMO.runtime.game.actors.Actor;
 import com.human.tapMMO.runtime.game.actors.mob.Mob;
+import com.human.tapMMO.runtime.game.actors.player.Player;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +15,7 @@ public class Enemy extends Mob {
     private int fleeHealthThreshold;
 
     public Enemy() {
+        super();
         this.isFleeing = false;
         this.fleeHealthThreshold = this.health / 5; // Моб начинает убегать при 20% здоровья
     }
@@ -23,6 +25,12 @@ public class Enemy extends Mob {
         // Базовая атака врага
         int damage = (int) (level * Math.random() * 5);
         target.takeDamage(damage);
+        System.out.println(this.name + " dealth " + damage + " damage to "+target.getName());
+        if (target instanceof Player) {
+            serviceList.sendDamage.apply((Player) target);
+        } else {
+            System.out.println(target.getName() + " is not player");
+        }
     }
 
     @Override

@@ -13,6 +13,7 @@ public class Boss extends Mob {
     private boolean enraged;
 
     public Boss() {
+        super();
         this.abilities = new ArrayList<>();
         this.phaseCounter = 1;
         this.enrageTimer = 300; // 5 минут до ярости

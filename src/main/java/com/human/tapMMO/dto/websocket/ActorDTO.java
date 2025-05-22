@@ -11,5 +11,7 @@ public class ActorDTO {
     private float y;
     private String renderState;
     private int health;
+    private int stamina;
+    private int mana;
     private Buff[] buffs;
 }

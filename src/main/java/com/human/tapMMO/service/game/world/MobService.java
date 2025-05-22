@@ -49,7 +49,7 @@ public class MobService {
 
 
     public List<ActorDTO> initAllMobs() { //при инициализации мира
-        return actorMapper.toActorDTO(mobRepository.findAllByState("alive"));
+        return actorMapper.toActorDTOFromModel(mobRepository.findAllByState("alive"));
     }
 
 }

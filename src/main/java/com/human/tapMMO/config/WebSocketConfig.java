@@ -10,18 +10,19 @@ import com.human.tapMMO.dto.websocket.DamageDTO;
 import com.human.tapMMO.model.connection.InitCharacterConnection;
 import com.human.tapMMO.model.connection.InitUserResponse;
 import com.human.tapMMO.dto.websocket.ChatMessage;
-import com.human.tapMMO.dto.websocket.Position;
 import com.human.tapMMO.model.tables.ItemPosition;
-import com.human.tapMMO.model.tables.MobModel;
 import com.human.tapMMO.repository.ItemRepository;
+import com.human.tapMMO.runtime.game.Logger;
+import com.human.tapMMO.runtime.game.actors.mob.MobServiceList;
+import com.human.tapMMO.runtime.game.actors.player.Player;
 import com.human.tapMMO.runtime.game.world.MapManager;
 import com.human.tapMMO.service.game.GameLoopService;
 import com.human.tapMMO.service.game.player.ItemService;
+import com.human.tapMMO.service.game.player.PlayerService;
 import com.human.tapMMO.service.game.world.MobService;
 import com.human.tapMMO.service.game.world.RespawnService;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 
@@ -36,10 +37,13 @@ public class WebSocketConfig {
 
     private final ItemService itemService;
     private final MobService mobService;
+    private final PlayerService playerService;
 
     private final ConcurrentHashMap<String, CompletableFuture<InitCharacterConnection>> pendingRequests = new ConcurrentHashMap<>();
 
-    private final GameLoopService entityManager;
+    private final GameLoopService gameLoopService;
+
+    private final Logger logger;
 
 //    @Autowired
     private final RespawnService respawnService;
@@ -78,6 +82,17 @@ public class WebSocketConfig {
         server.addConnectListener(client -> {
             System.out.println("Client connected: " + client.getSessionId());
         });
+        server.addDisconnectListener(client -> {
+            final var player = gameLoopService.getPlayerList().get(gameLoopService.getPlayerIdList().get(client.getSessionId()));
+            if (player != null) {
+                System.out.println(player.getName() + " disconnected.");
+                gameLoopService.deletePlayer(player.getId());
+                playerService.updateAllCharacterData(player);
+            } else {
+                System.out.println(client.getSessionId() +" disconnected.");
+            }
+
+        });
         return server;
     }
 
@@ -87,11 +102,8 @@ public class WebSocketConfig {
 
     private String getRoomForClient(SocketIOClient client) {
         Set<String> rooms = client.getAllRooms();
-        if (rooms.isEmpty()) {
-            return "public";
-        }
-//        return rooms.iterator().next();
-        return "public";
+        //        return rooms.iterator().next();
+        return "global";
     }
 
     @PreDestroy
@@ -105,7 +117,50 @@ public class WebSocketConfig {
     @Bean
     public Function<List<ActorDTO>, List<ActorDTO>> sendUpdatedMobs() {
         return input -> {
-            generalNamespace.getAllClients().forEach(client -> client.sendEvent("updateAllMobs", input));//создать mobDTO для отправки
+            generalNamespace.getAllClients().forEach(client -> client.sendEvent("updateAllMobs", input));
+            return input;
+        };
+    }
+
+    @Bean
+    public Function<Player, Player> sendDamageFromMob() {
+        return input -> {
+            generalNamespace.getClient(input.getSessionId()).sendEvent("updatePlayerHealth", input.getHealth());
+            return input;
+        };
+    }
+    @Bean
+    public Function<Player, Player> sendHealingFromMob() {
+        return input -> {
+            generalNamespace.getAllClients().forEach(client -> client.sendEvent("updateAllMobs", input));
+            return input;
+        };
+    }
+    @Bean
+    public Function<Player, Player> sendBuffFromMob() {
+        return input -> {
+            generalNamespace.getAllClients().forEach(client -> client.sendEvent("updateAllMobs", input));
+            return input;
+        };
+    }
+    @Bean
+    public Function<Player, Player> sendNewQuestFromMob() {
+        return input -> {
+            generalNamespace.getAllClients().forEach(client -> client.sendEvent("updateAllMobs", input));
+            return input;
+        };
+    }
+    @Bean
+    public Function<Player, Player> sendUpdatedQuestFromMob() {
+        return input -> {
+            generalNamespace.getAllClients().forEach(client -> client.sendEvent("updateAllMobs", input));
+            return input;
+        };
+    }
+    @Bean
+    public Function<Player, Player> sendCompletedQuestFromMob() {
+        return input -> {
+            generalNamespace.getAllClients().forEach(client -> client.sendEvent("updateAllMobs", input));
             return input;
         };
     }
@@ -118,19 +173,22 @@ public class WebSocketConfig {
         mapManager.init().thenRun(() -> {
             assert !mapManager.actorList.isEmpty();
             mobService.updateDB(mapManager.actorList);
-            entityManager.init(mobService.initAllMobs(), itemService.initAllItems(), sendUpdatedMobs());
+            gameLoopService.init(mobService.initAllMobs(), itemService.initAllItems(), sendUpdatedMobs(),
+                    new MobServiceList(sendDamageFromMob(), sendHealingFromMob(), sendBuffFromMob(), sendNewQuestFromMob(), sendUpdatedQuestFromMob(), sendCompletedQuestFromMob()));
         });
+
 
         generalNamespace.addEventListener("sendMessage", ChatMessage.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
             client.getNamespace().getRoomOperations(roomId).sendEvent("receiveMessage", data);
-            System.out.println("Message sent: " + data.getContent());
+            logger.sendMessage(data);
+//            System.out.println("Message sent: " + data.getContent());
         });
 
         generalNamespace.addEventListener("sendPlayerPosition", ActorDTO.class, (client, data, ackRequest) -> {
             String roomId = getRoomForClient(client);
             client.getNamespace().getRoomOperations(roomId).sendEvent("receivePlayerPosition", data);
-            entityManager.updatePlayer(data);
+            gameLoopService.updatePlayer(data);
         });
 
 //        generalNamespace.addEventListener("sendMobPosition", ActorDTO.class, (client, data, ackRequest) -> {
@@ -155,7 +213,13 @@ public class WebSocketConfig {
             client.joinRoom(data.getRoomId());
             client.getNamespace().getRoomOperations(data.getRoomId())
                     .sendEvent("userConnected", data);
-            entityManager.addNewPlayer(data);
+            if (data.getRoomId().equals("global")) {
+                gameLoopService.getPlayerList().get(data.getCharacterId()).setSessionId(client.getSessionId());
+                gameLoopService.getPlayerIdList().put(client.getSessionId(), data.getCharacterId());
+            } else {
+                System.out.println("fuck");
+            }
+//            entityManager.addNewPlayer(data, client);
         });
 
 
@@ -235,7 +299,7 @@ public class WebSocketConfig {
         generalNamespace.addEventListener("deleteItem", ItemPosition.class, (client, data, ackRequest) -> {
             System.out.println("item " + data.getItemId() + " is deleting");
             String roomId = getRoomForClient(client);
-            entityManager.deleteItem(data.getItemId());
+            gameLoopService.deleteItem(data.getItemId());
             itemService.deleteItem(data.getItemId());
             client.getNamespace().getRoomOperations(roomId)
                     .sendEvent("deleteItem", data);
@@ -250,7 +314,7 @@ public class WebSocketConfig {
             } else {
                 posId = itemService.lootItem(data);
             }
-            entityManager.addNewItem(data, posId);
+            gameLoopService.addNewItem(data, posId);
             client.getNamespace().getRoomOperations(roomId)
                     .sendEvent("addItem", data);
         });
@@ -269,7 +333,7 @@ public class WebSocketConfig {
             String roomId = getRoomForClient(client);
             if (Objects.equals(data.getTarget().getTargetType(), "mob")) {
                 final var mobId = data.getTarget().getTargetId();
-                entityManager.dealDamageToMob(mobId, data.getValue());
+                gameLoopService.dealDamageToMob(mobId, data.getValue());
             } else {
                 System.out.println("удар по игроку");
             }
@@ -299,7 +363,7 @@ public class WebSocketConfig {
 //        });
 
         respawnService.init(mob -> {
-            entityManager.addNewMob(mob);
+            gameLoopService.addNewMob(mob, new MobServiceList(sendDamageFromMob(), sendHealingFromMob(), sendBuffFromMob(), sendNewQuestFromMob(), sendUpdatedQuestFromMob(), sendCompletedQuestFromMob()));
             return mob;
         });
 

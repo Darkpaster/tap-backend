@@ -1,5 +1,6 @@
 package com.human.tapMMO.service.game;
 
+import com.corundumstudio.socketio.SocketIOClient;
 import com.human.tapMMO.dto.rest.ItemDTO;
 import com.human.tapMMO.dto.websocket.ActorDTO;
 import com.human.tapMMO.model.connection.InitCharacterConnection;
@@ -7,6 +8,7 @@ import com.human.tapMMO.dto.websocket.Position;
 import com.human.tapMMO.model.tables.ItemPosition;
 import com.human.tapMMO.model.tables.MobModel;
 import com.human.tapMMO.runtime.game.actors.mob.Mob;
+import com.human.tapMMO.runtime.game.actors.mob.MobServiceList;
 import com.human.tapMMO.runtime.game.actors.player.Player;
 import com.human.tapMMO.service.game.player.ItemService;
 import com.human.tapMMO.service.game.world.MobService;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,16 +37,18 @@ public class GameLoopService implements InitializingBean, DisposableBean {
     private final HashMap<Long, Player> playerList = new HashMap<>();
     private final HashMap<Long, ItemPosition> itemList = new HashMap<>();
 
+    private final HashMap<UUID, Long> playerIdList = new HashMap<>();
+
     private Function<List<ActorDTO>, List<ActorDTO>> sendUpdatedMobs;
 
     private final MobService mobService;
 
 
-    public void init(List<ActorDTO> initMobs, List<ItemPosition> initItems, Function<List<ActorDTO>, List<ActorDTO>> sendUpdatedMob) {
+    public void init(List<ActorDTO> initMobs, List<ItemPosition> initItems, Function<List<ActorDTO>, List<ActorDTO>> sendUpdatedMob, MobServiceList mobServiceList) {
         this.sendUpdatedMobs = sendUpdatedMob;
         for (ActorDTO mob : initMobs) {
-            System.out.println("MobName from db: "+mob.getName());
-            addNewMob(mob);
+//            System.out.println("MobName from db: "+mob.getName());
+            addNewMob(mob, mobServiceList);
         }
         for (ItemPosition item : initItems) {
             this.itemList.put(item.getId(), item);
@@ -97,10 +102,19 @@ public class GameLoopService implements InitializingBean, DisposableBean {
         }
     }
 
-    public void addNewPlayer(InitCharacterConnection player) {
-        var newPosition = new Player(player.getNickname());
-        newPosition.setId(player.getCharacterId());
-        playerList.put(player.getCharacterId(), newPosition);
+//    public void addNewPlayer(InitCharacterConnection player, SocketIOClient client) {
+//        // запрос в бд на получение всей инфы
+//        final var newPlayer = new Player(player.getNickname(), client.getSessionId());
+//        newPlayer.setId(player.getCharacterId());
+//        playerList.put(player.getCharacterId(), newPlayer);
+//    }
+
+    public void addNewPlayer(Player player) {
+        if (player == null || playerList.containsKey(player.getId())) {
+            System.out.println("fuck!");
+            return;
+        }
+        playerList.put(player.getId(), player);
     }
 
     public void deletePlayer(long id) {
@@ -124,21 +138,23 @@ public class GameLoopService implements InitializingBean, DisposableBean {
         mobList.remove(mobId);
     }
 
-    public void addNewMob(MobModel mob) {
+    public void addNewMob(MobModel mob, MobServiceList mobServiceList) {
         final var newMob = Mob.createMob(mob.getName());
         assert newMob != null;
         newMob.setX(mob.getX());
         newMob.setY(mob.getY());
         newMob.setId(mob.getId());
+        newMob.setServiceList(mobServiceList);
         this.mobList.put(mob.getId(), newMob);
     }
 
-    public void addNewMob(ActorDTO mob) {
+    public void addNewMob(ActorDTO mob, MobServiceList mobServiceList) {
         final var newMob = Mob.createMob(mob.getName());
         assert newMob != null;
         newMob.setX(mob.getX());
         newMob.setY(mob.getY());
         newMob.setId(mob.getActorId());
+        newMob.setServiceList(mobServiceList);
         this.mobList.put(mob.getActorId(), newMob);
     }
 

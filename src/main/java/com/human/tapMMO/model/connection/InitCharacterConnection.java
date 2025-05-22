@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class InitCharacterConnection {
     long characterId;
-    private String nickname;
+    private String name;
     String roomId;
     String characterType;
 }

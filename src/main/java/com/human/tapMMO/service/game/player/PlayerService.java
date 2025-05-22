@@ -1,10 +1,12 @@
 package com.human.tapMMO.service.game.player;
 
 
+import com.human.tapMMO.mapper.ActorMapper;
 import com.human.tapMMO.model.connection.InitCharacterConnection;
 import com.human.tapMMO.model.tables.*;
 import com.human.tapMMO.model.tables.Character;
 import com.human.tapMMO.repository.*;
+import com.human.tapMMO.runtime.game.actors.player.Player;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,9 +26,11 @@ public class PlayerService {
     private final QuestRepository questRepository;
     private final SkillRepository skillRepository;
 
+    private final ActorMapper actorMapper;
+
     private Character createNewCharacter(InitCharacterConnection init, long accoundId) {
         Character newChar = new Character();
-        newChar.setNickname(init.getNickname());
+        newChar.setName(init.getName());
         newChar.setCharacterType(init.getCharacterType());
         newChar.setAccountId(accoundId);
         characterRepository.save(newChar);
@@ -40,7 +44,7 @@ public class PlayerService {
     }
 
     public InitCharacterConnection initNewCharacter(InitCharacterConnection init, long accountId) throws Exception {
-        if (characterRepository.findCharacterByNickname(init.getNickname()).isPresent()) {
+        if (characterRepository.findCharacterByName(init.getName()).isPresent()) {
             throw new Exception("Ник занят");
         }
         Character newChar = createNewCharacter(init, accountId);
@@ -56,6 +60,22 @@ public class PlayerService {
 
     public List<Character> getCharactersByAccountId(long accountId) {
         return characterRepository.findCharactersByAccountId(accountId);
+    }
+
+    public Player getAllCharacterData(long charId) {
+        final Character character = characterRepository.findById(charId).orElseThrow(
+                () -> new NoSuchElementException("could not found char during attempt to receive data "+charId));
+        final var characterStats = characterStatsRepository.findByCharacterId(charId).orElseThrow(
+                () -> new NoSuchElementException("could not found charStats during attempt to receive data "+charId));
+        return actorMapper.toPlayer(character, characterStats);
+    }
+
+    public void updateAllCharacterData(Player newData) {
+        characterRepository.findById(newData.getId()).orElseThrow(() -> new NoSuchElementException("could not found char during updating data "+newData.getName()));
+        final var character = actorMapper.toCharacter(newData);
+        final var characterStats = actorMapper.toCharacterStats(newData);
+        characterRepository.save(character);
+        characterStatsRepository.save(characterStats);
     }
 
     public void updateCharacter(Character newData) {
