@@ -25,14 +25,15 @@ public class PlayerService {
     private final ProfessionRepository professionRepository;
     private final QuestRepository questRepository;
     private final SkillRepository skillRepository;
+    private final TalentRepository talentRepository;
 
     private final ActorMapper actorMapper;
 
-    private Character createNewCharacter(InitCharacterConnection init, long accoundId) {
+    private Character createNewCharacter(InitCharacterConnection init, long accountId) {
         Character newChar = new Character();
         newChar.setName(init.getName());
         newChar.setCharacterType(init.getCharacterType());
-        newChar.setAccountId(accoundId);
+        newChar.setAccountId(accountId);
         characterRepository.save(newChar);
         return newChar;
     }
@@ -88,6 +89,7 @@ public class PlayerService {
         character.setY(newData.getY());
         character.setSanity(newData.getSanity());
         character.setReputation(newData.getReputation());
+        characterRepository.save(character);
     }
 
     public void updateCharacterStats(CharacterStats newData) {
@@ -98,6 +100,7 @@ public class PlayerService {
         character.setStamina(newData.getStamina());
         character.setStrength(newData.getStrength());
         character.setAgility(newData.getAgility());
+        characterStatsRepository.save(character);
     }
 
     public void deleteCharacter(long characterId) {
@@ -109,45 +112,103 @@ public class PlayerService {
         System.out.println("Deleted character items: "+deletedInventory+", "+deletedEquipped);
     }
 
-
-
+    // Реализация методов проверки требований
     public boolean hasRequiredLevel(Long characterId, int requiredLevel) {
-        // Проверка достаточного уровня персонажа
-        return true; // Заглушка
+        return characterRepository.findById(characterId)
+                .map(character -> character.getLevel() >= requiredLevel)
+                .orElse(false);
     }
 
     public boolean hasRequiredAttributeLevel(Long characterId, String attributeName, int requiredValue) {
-        // Проверка достаточного уровня атрибута
-        return true; // Заглушка
+        Optional<CharacterStats> stats = characterStatsRepository.findByCharacterId(characterId);
+        if (stats.isEmpty()) {
+            return false;
+        }
+
+        CharacterStats characterStats = stats.get();
+        switch (attributeName.toLowerCase()) {
+            case "strength":
+                return characterStats.getStrength() >= requiredValue;
+            case "agility":
+                return characterStats.getAgility() >= requiredValue;
+            case "intellect":
+                return characterStats.getIntellect() >= requiredValue;
+            case "stamina":
+                return characterStats.getStamina() >= requiredValue;
+            default:
+                return false;
+        }
     }
 
     public boolean hasRequiredSkillExperience(Long characterId, String skillName, int requiredValue) {
-        // Проверка достаточного опыта в навыке
-        return true; // Заглушка
+        // Если есть таблица skills, можно реализовать проверку
+        return skillRepository.findByCharacterIdAndSkillName(characterId, skillName)
+                .map(skill -> skill.getExperience() >= requiredValue)
+                .orElse(false);
     }
 
     public boolean hasTalent(Long characterId, Long talentId) {
-        // Проверка наличия таланта
-        return true; // Заглушка
+        // Нужна связующая таблица character_talents для полной реализации
+        // Пока возвращаем false
+        return false;
     }
 
-    public boolean hasCompletedQuest(Long characterId, String questId) {
-        // Проверка завершения квеста
-        return true; // Заглушка
+    public boolean hasCompletedQuest(Long characterId, String questName) {
+        return questRepository.findByCharacterIdAndQuest(characterId, questName)
+                .map(quest -> quest.getQuestStage() == -1) // -1 = завершен
+                .orElse(false);
     }
 
     public boolean hasItem(Long characterId, String itemId, int quantity) {
-        // Проверка наличия предмета
-        return true; // Заглушка
+        // Нужно проверить в инвентаре
+        long itemIdLong;
+        try {
+            itemIdLong = Long.parseLong(itemId);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+
+        return inventoryItemRepository.findByCharacterIdAndItemId(characterId, itemIdLong)
+                .map(inventoryItem -> inventoryItem.getQuantity() >= quantity)
+                .orElse(false);
     }
 
     public void addTalentToCharacter(Long characterId, Talent talent) {
-        // Добавление таланта персонажу
+        // Здесь должна быть логика добавления таланта персонажу
+        // Нужна связующая таблица character_talents
+        // Пока оставляем пустой метод
     }
 
     public void applyAttributeModifier(Long characterId, String attributeName, double value) {
-        // Применение модификатора атрибута
+        Optional<CharacterStats> statsOpt = characterStatsRepository.findByCharacterId(characterId);
+        if (statsOpt.isEmpty()) {
+            return;
+        }
+
+        CharacterStats stats = statsOpt.get();
+        int intValue = (int) value;
+
+        switch (attributeName.toLowerCase()) {
+            case "strength":
+                stats.setStrength(stats.getStrength() + intValue);
+                break;
+            case "agility":
+                stats.setAgility(stats.getAgility() + intValue);
+                break;
+            case "intellect":
+                stats.setIntellect(stats.getIntellect() + intValue);
+                break;
+            case "stamina":
+                stats.setStamina(stats.getStamina() + intValue);
+                break;
+            case "health":
+                stats.setHealth(stats.getHealth() + intValue);
+                break;
+            case "mana":
+                stats.setMana(stats.getMana() + intValue);
+                break;
+        }
+
+        characterStatsRepository.save(stats);
     }
-
-
 }

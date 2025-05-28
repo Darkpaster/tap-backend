@@ -1,11 +1,8 @@
-package com.human.tapMMO.controller;
+package com.human.tapMMO.controller.world;
 
 import com.human.tapMMO.dto.websocket.ActorDTO;
 import com.human.tapMMO.mapper.ActorMapper;
-import com.human.tapMMO.model.tables.MobModel;
-import com.human.tapMMO.runtime.game.actors.mob.Mob;
 import com.human.tapMMO.service.game.GameLoopService;
-import com.human.tapMMO.service.game.world.MobService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

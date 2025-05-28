@@ -1,15 +1,4 @@
-package com.human.tapMMO.controller;
-
-import com.human.tapMMO.model.tables.Guild;
-import com.human.tapMMO.runtime.game.actors.player.Player;
-import com.human.tapMMO.service.game.social.GuildService;
-import com.human.tapMMO.service.game.player.PlayerService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+package com.human.tapMMO.controller.social;
 
 //@RestController
 //@RequestMapping("/guild")

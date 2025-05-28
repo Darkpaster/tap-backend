@@ -1,4 +1,4 @@
-package com.human.tapMMO.controller;
+package com.human.tapMMO.controller.system;
 
 import com.human.tapMMO.dto.rest.UserDTO;
 import com.human.tapMMO.service.auth.AuthService;

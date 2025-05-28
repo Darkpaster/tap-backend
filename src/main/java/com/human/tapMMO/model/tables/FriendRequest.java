@@ -12,11 +12,6 @@ import java.util.Objects;
 @Table(name = "friend_requests")
 @Getter
 @Setter
-//@ToString
-//@RequiredArgsConstructor
-//@Builder
-//@NoArgsConstructor
-//@AllArgsConstructor
 public class FriendRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,13 +20,13 @@ public class FriendRequest {
     //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "sender_id")
 //    @ToString.Exclude
-    @Column(name = "sender_id", nullable = false)
+    @Column(name = "sender_id", nullable = false, updatable = false)
     private Long senderId;
 
     //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "receiver_id")
 //    @ToString.Exclude
-    @Column(name = "receiver_id", nullable = false)
+    @Column(name = "receiver_id", nullable = false, updatable = false)
     private Long receiverId;
 
     @Enumerated(EnumType.STRING)

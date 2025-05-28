@@ -1,6 +1,5 @@
-package com.human.tapMMO.controller;
+package com.human.tapMMO.controller.world;
 
-import com.human.tapMMO.dto.ApiResponse;
 import com.human.tapMMO.runtime.game.world.MapManager;
 import com.human.tapMMO.runtime.game.world.Tile;
 import lombok.RequiredArgsConstructor;

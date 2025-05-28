@@ -102,13 +102,6 @@ public class GameLoopService implements InitializingBean, DisposableBean {
         }
     }
 
-//    public void addNewPlayer(InitCharacterConnection player, SocketIOClient client) {
-//        // запрос в бд на получение всей инфы
-//        final var newPlayer = new Player(player.getNickname(), client.getSessionId());
-//        newPlayer.setId(player.getCharacterId());
-//        playerList.put(player.getCharacterId(), newPlayer);
-//    }
-
     public void addNewPlayer(Player player) {
         if (player == null || playerList.containsKey(player.getId())) {
             System.out.println("fuck!");

@@ -4,8 +4,11 @@ import com.human.tapMMO.model.tables.Talent;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface TalentRepository extends JpaRepository<Talent, Long> {
+    Optional<Talent> findByName(String name);
 //    List<Talent> findByCategory(TalentCategory category);
 //    List<Talent> findBySubCategory(TalentSubCategory subCategory);
 //    List<Talent> findBySpecialization(TalentSpecialization specialization);

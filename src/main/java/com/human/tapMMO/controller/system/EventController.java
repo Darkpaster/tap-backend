@@ -1,4 +1,4 @@
-package com.human.tapMMO.controller;
+package com.human.tapMMO.controller.system;
 
 //@RestController
 //@RequiredArgsConstructor

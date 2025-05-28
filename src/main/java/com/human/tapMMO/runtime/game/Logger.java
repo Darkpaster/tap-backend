@@ -1,6 +1,7 @@
 package com.human.tapMMO.runtime.game;
 
 import com.human.tapMMO.dto.websocket.ChatMessage;
+import com.human.tapMMO.mapper.ChatMessageMapper;
 import com.human.tapMMO.model.tables.ChatMessageModel;
 import com.human.tapMMO.repository.ChatMessageRepository;
 import com.human.tapMMO.runtime.game.actors.player.Player;
@@ -40,6 +41,7 @@ public class Logger {
     private final Map<String, List<ChatMessage>> messageHistoryByRoom;
     private final Map<String, ReadWriteLock> locksByRoom;
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatMessageMapper chatMessageMapper;
 
     @Value("${chat.logger.use-database:true}")
     private boolean useDatabaseStorage;
@@ -47,11 +49,12 @@ public class Logger {
     @Value("${chat.logger.use-file-backup:false}")
     private boolean useFileBackup;
 
-    public Logger(Map<Long, Player> playerList, @Autowired(required = false) ChatMessageRepository chatMessageRepository) {
+    public Logger(Map<Long, Player> playerList, @Autowired(required = false) ChatMessageRepository chatMessageRepository, ChatMessageMapper chatMessageMapper) {
         this.playerList = playerList;
         this.messageHistoryByRoom = new ConcurrentHashMap<>();
         this.locksByRoom = new ConcurrentHashMap<>();
         this.chatMessageRepository = chatMessageRepository;
+        this.chatMessageMapper = chatMessageMapper;
     }
 
     /**
@@ -147,7 +150,7 @@ public class Logger {
         try {
             // Сохраняем сообщения в БД
             List<ChatMessageModel> entities = messages.stream()
-                    .map(ChatMessageModel::new)
+                    .map(chatMessageMapper::toChatMessageModel)
                     .collect(Collectors.toList());
 
             chatMessageRepository.saveAll(entities);
@@ -245,7 +248,7 @@ public class Logger {
                 .findByRoomIdOrderByTimestampDesc(targetRoomId, PageRequest.of(0, limit));
 
         return entities.stream()
-                .map(ChatMessageModel::toChatMessage)
+                .map(chatMessageMapper::toChatMessage)
                 .collect(Collectors.toList());
     }
 

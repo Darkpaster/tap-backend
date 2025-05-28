@@ -1,4 +1,4 @@
-package com.human.tapMMO.controller;
+package com.human.tapMMO.controller.system;
 
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;

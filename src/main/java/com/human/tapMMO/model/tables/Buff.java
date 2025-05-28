@@ -14,6 +14,9 @@ public class Buff {
     @Column(name = "id", unique = true, updatable = false, nullable = false)
     private Long id;
 
+    @Column(name = "character_id", updatable = false, nullable = false)
+    private Long characterId;
+
     @Column(name = "name", updatable = false, nullable = false)
     private String name;
 

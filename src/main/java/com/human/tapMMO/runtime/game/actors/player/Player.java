@@ -1,6 +1,9 @@
 package com.human.tapMMO.runtime.game.actors.player;
 
 import com.human.tapMMO.runtime.game.actors.Actor;
+import com.human.tapMMO.runtime.game.buffs.Buff;
+import com.human.tapMMO.runtime.game.talents.RuntimeTalent;
+import com.human.tapMMO.runtime.game.abilities.PassiveAbility;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,9 +11,10 @@ import java.util.*;
 
 @Getter
 public class Player extends Actor {
-    // Геттеры и сеттеры
+    // Базовые характеристики
     private int experience;
-    private final Map<String, Integer> stats;
+    private final Map<String, Integer> baseStats; // Базовые статы без модификаторов
+    private final Map<String, Integer> stats; // Финальные статы с модификаторами
     private final List<Item> inventory;
     private final Equipment equipment;
     private long gold;
@@ -19,6 +23,12 @@ public class Player extends Actor {
     private int stamina;
     private int maxStamina;
     private final List<Quest> activeQuests;
+
+    // Новые системы
+    private final List<Buff> activeBuffs;
+    private final List<PassiveAbility> passiveAbilities;
+    private final List<RuntimeTalent> talents;
+
     @Setter
     private UUID sessionId;
 
@@ -26,17 +36,26 @@ public class Player extends Actor {
         super();
         this.experience = 0;
 
-        // Инициализация характеристик
+        // Инициализация базовых характеристик
+        this.baseStats = new HashMap<>();
         this.stats = new HashMap<>();
-        stats.put("strength", 10);
-        stats.put("agility", 10);
-        stats.put("intelligence", 10);
-        stats.put("vitality", 10);
+        baseStats.put("strength", 10);
+        baseStats.put("agility", 10);
+        baseStats.put("intelligence", 10);
+        baseStats.put("vitality", 10);
 
         this.inventory = new ArrayList<>();
         this.equipment = new Equipment();
         this.gold = 0L;
         this.activeQuests = new ArrayList<>();
+
+        // Инициализация новых систем
+        this.activeBuffs = new ArrayList<>();
+        this.passiveAbilities = new ArrayList<>();
+        this.talents = new ArrayList<>();
+
+        // Первоначальный расчет статов
+        recalculateStats();
     }
 
     public void gainExperience(int exp) {
@@ -52,20 +71,167 @@ public class Player extends Actor {
         experience -= level * level + 4;
         setLevel(getLevel() + 1);
 
-        // Увеличение характеристик
-        int healthIncrease = stats.get("vitality") / 2;
+        // Увеличение базовых характеристик
+        int healthIncrease = baseStats.get("vitality") / 2;
         setMaxHealth(getMaxHealth() + healthIncrease);
         setHealth(getMaxHealth());
 
-        // Оповещение о повышении уровня
-
+        // Перерасчет всех статов после повышения уровня
+        recalculateStats();
     }
 
-    private int calculateNextLevelExperience() {
-        // Простая формула расчета опыта для следующего уровня
-        return 100 * getLevel() * getLevel();
+    /**
+     * Перерасчитывает все статы игрока на основе базовых характеристик,
+     * экипировки, баффов, талантов и пассивных способностей
+     */
+    public void recalculateStats() {
+        // Копируем базовые статы
+        stats.clear();
+        for (Map.Entry<String, Integer> entry : baseStats.entrySet()) {
+            stats.put(entry.getKey(), entry.getValue());
+        }
+
+        // Применяем бонусы от экипировки
+        applyEquipmentBonuses();
+
+        // Применяем бонусы от талантов
+        applyTalentBonuses();
+
+        // Применяем бонусы от пассивных способностей
+        applyPassiveAbilityBonuses();
+
+        // Применяем бонусы от баффов (баффы применяются последними)
+        applyBuffBonuses();
+
+        // Обновляем производные характеристики
+        updateDerivedStats();
     }
 
+    private void applyEquipmentBonuses() {
+        for (EquippableItem item : equipment.getEquipped().values()) {
+            for (Map.Entry<String, Integer> bonus : item.getStatBonuses().entrySet()) {
+                String statName = bonus.getKey();
+                int bonusValue = bonus.getValue();
+
+                if (stats.containsKey(statName)) {
+                    stats.put(statName, stats.get(statName) + bonusValue);
+                }
+            }
+        }
+    }
+
+    private void applyTalentBonuses() {
+        for (RuntimeTalent talent : talents) {
+            if (talent.isActive()) {
+                talent.applyStatModifiers(stats);
+            }
+        }
+    }
+
+    private void applyPassiveAbilityBonuses() {
+        for (PassiveAbility ability : passiveAbilities) {
+            if (ability.isActive()) {
+                ability.applyStatModifiers(stats);
+            }
+        }
+    }
+
+    private void applyBuffBonuses() {
+        // Баффы обрабатываются через BuffService, но здесь мы можем
+        // получить их текущие модификаторы для пересчета
+        for (Buff buff : activeBuffs) {
+            if (buff.isPositive()) {
+                // Применение бонусов от баффов
+                // Конкретная логика зависит от типа баффа
+            }
+        }
+    }
+
+    private void updateDerivedStats() {
+        // Обновление здоровья на основе жизненной силы
+        int vitalityBonus = (stats.get("vitality") - baseStats.get("vitality")) * 5;
+        setMaxHealth(getMaxHealth() + vitalityBonus);
+
+        // Обновление маны на основе интеллекта
+        int intelligenceBonus = (stats.get("intelligence") - baseStats.get("intelligence")) * 3;
+        maxMana = 50 + intelligenceBonus;
+
+        // Обновление выносливости на основе ловкости
+        int agilityBonus = (stats.get("agility") - baseStats.get("agility")) * 2;
+        maxStamina = 100 + agilityBonus;
+    }
+
+    // Методы для работы с баффами
+    public void addBuff(Buff buff) {
+        activeBuffs.add(buff);
+        recalculateStats();
+    }
+
+    public void removeBuff(Buff buff) {
+        activeBuffs.remove(buff);
+        recalculateStats();
+    }
+
+    public boolean hasBuff(Class<? extends Buff> buffClass) {
+        return activeBuffs.stream().anyMatch(buffClass::isInstance);
+    }
+
+    // Методы для работы с пассивными способностями
+    public void addPassiveAbility(PassiveAbility ability) {
+        passiveAbilities.add(ability);
+        ability.setOwner(this);
+        recalculateStats();
+    }
+
+    public void removePassiveAbility(PassiveAbility ability) {
+        passiveAbilities.remove(ability);
+        recalculateStats();
+    }
+
+    public boolean hasPassiveAbility(String abilityName) {
+        return passiveAbilities.stream()
+                .anyMatch(ability -> ability.getName().equals(abilityName));
+    }
+
+    // Методы для работы с талантами
+    public void addTalent(RuntimeTalent talent) {
+        talents.add(talent);
+        talent.setOwner(this);
+        recalculateStats();
+    }
+
+    public void removeTalent(RuntimeTalent talent) {
+        talents.remove(talent);
+        recalculateStats();
+    }
+
+    public boolean hasTalent(String talentName) {
+        return talents.stream()
+                .anyMatch(talent -> talent.getName().equals(talentName));
+    }
+
+    public RuntimeTalent getTalent(String talentName) {
+        return talents.stream()
+                .filter(talent -> talent.getName().equals(talentName))
+                .findFirst()
+                .orElse(null);
+    }
+
+    // Методы для получения модифицированных статов
+    public int getFinalStat(String statName) {
+        return stats.getOrDefault(statName, 0);
+    }
+
+    public int getBaseStat(String statName) {
+        return baseStats.getOrDefault(statName, 0);
+    }
+
+    public void setBaseStat(String statName, int value) {
+        baseStats.put(statName, value);
+        recalculateStats();
+    }
+
+    // Обновленные методы с учетом новых систем
     public void addItem(Item item) {
         inventory.add(item);
     }
@@ -80,6 +246,7 @@ public class Player extends Actor {
         }
 
         equipment.equip(equippableItem);
+        recalculateStats(); // Пересчитываем статы после экипировки
         return true;
     }
 
@@ -87,22 +254,26 @@ public class Player extends Actor {
         EquippableItem item = equipment.unequip(slot);
         if (item != null) {
             inventory.add(item);
+            recalculateStats(); // Пересчитываем статы после снятия экипировки
         }
     }
 
-//    public void attack(Actor target) {
-//        int damage = calculateDamage();
-//        target.takeDamage(damage);
-//    }
-
     private int calculateDamage() {
-        // Расчет базового урона на основе характеристик и экипировки
-        int baseDamage = stats.get("strength") + getLevel() * 2;
+        // Расчет урона на основе финальных характеристик
+        int baseDamage = getFinalStat("strength") + getLevel() * 2;
         return equipment.applyDamageModifiers(baseDamage);
     }
 
     @Override
     public void onDeath() {
+        // Очистка временных эффектов при смерти
+        activeBuffs.clear();
+
+        // Деактивация пассивных способностей
+        for (PassiveAbility ability : passiveAbilities) {
+            ability.onOwnerDeath();
+        }
+
         // Логика смерти игрока (потеря опыта, перемещение на точку возрождения и т.д.)
     }
 
@@ -138,7 +309,7 @@ public class Player extends Actor {
         return false;
     }
 
-    // Внутренние классы для инвентаря и снаряжения
+    // Остальные внутренние классы остаются без изменений...
     @Getter
     @Setter
     public static class Item {
@@ -152,7 +323,6 @@ public class Player extends Actor {
             this.value = value;
         }
 
-        // Геттеры
         public String getName() {
             return name;
         }
@@ -181,7 +351,6 @@ public class Player extends Actor {
         public void addStatBonus(String stat, int bonus) {
             statBonuses.put(stat, bonus);
         }
-
     }
 
     public enum EquipmentSlot {
@@ -207,7 +376,6 @@ public class Player extends Actor {
         public int applyDamageModifiers(int baseDamage) {
             int totalDamage = baseDamage;
 
-            // Добавление бонусов от экипировки
             for (EquippableItem item : equipped.values()) {
                 if (item.getStatBonuses().containsKey("damage")) {
                     totalDamage += item.getStatBonuses().get("damage");
@@ -216,7 +384,6 @@ public class Player extends Actor {
 
             return totalDamage;
         }
-
     }
 
     @Getter
@@ -265,6 +432,5 @@ public class Player extends Actor {
         public void addItemReward(Item item) {
             itemRewards.add(item);
         }
-
     }
 }

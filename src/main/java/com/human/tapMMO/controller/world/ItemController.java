@@ -1,4 +1,4 @@
-package com.human.tapMMO.controller;
+package com.human.tapMMO.controller.world;
 
 import com.human.tapMMO.dto.rest.ItemDTO;
 import com.human.tapMMO.model.tables.EquippedItem;

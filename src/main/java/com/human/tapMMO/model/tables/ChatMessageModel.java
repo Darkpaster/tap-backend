@@ -37,23 +37,4 @@ public class ChatMessageModel {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
-    public ChatMessageModel(ChatMessage chatMessage) {
-        this.senderId = chatMessage.getSenderId();
-        this.content = chatMessage.getContent();
-        this.sender = chatMessage.getSender();
-        this.type = chatMessage.getType();
-        this.roomId = chatMessage.getRoomId();
-        this.timestamp = chatMessage.getTimestamp();
-    }
-
-    public ChatMessage toChatMessage() {
-        ChatMessage message = new ChatMessage();
-        message.setSenderId(this.senderId);
-        message.setContent(this.content);
-        message.setSender(this.sender);
-        message.setType(this.type);
-        message.setRoomId(this.roomId);
-        message.setTimestamp(this.timestamp);
-        return message;
-    }
 }

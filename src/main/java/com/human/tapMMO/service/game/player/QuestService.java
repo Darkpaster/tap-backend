@@ -1,244 +1,405 @@
 package com.human.tapMMO.service.game.player;
 
-import com.human.tapMMO.runtime.game.quests.*;
-import com.human.tapMMO.runtime.game.quests.requirement.ItemRequirement;
-import com.human.tapMMO.runtime.game.quests.requirement.LevelRequirement;
-import com.human.tapMMO.runtime.game.quests.requirement.QuestRequirement;
+import com.human.tapMMO.repository.QuestRepository;
+import com.human.tapMMO.runtime.game.quests.Quest;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+package com.human.tapMMO.service.game.player;
+
+import com.human.tapMMO.repository.QuestRepository;
+import com.human.tapMMO.runtime.game.quests.*;
+import com.human.tapMMO.runtime.game.quests.requirement.QuestRequirement;
+import com.human.tapMMO.model.tables.Character;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class QuestService {
-    private Map<String, Quest> quests = new HashMap<>();
-    private Map<String, PlayerContext> playerContexts = new HashMap<>();
 
-    // Регистрация нового квеста
-    public void registerQuest(Quest quest) {
-        quests.put(quest.getId(), quest);
+    private final QuestRepository questRepository;
+    private final PlayerService playerService;
+
+    // Хранилище шаблонов квестов (в реальном приложении может быть загружено из файлов/БД)
+    private final Map<String, Quest> questTemplates = new HashMap<>();
+
+    private final ItemService itemService;
+
+    /**
+     * Создает контекст игрока на основе данных из БД
+     */
+    private PlayerContext createPlayerContext(Long characterId) {
+        Character character = playerService.getCharacterById(characterId)
+                .orElseThrow(() -> new RuntimeException("Character not found"));
+
+        PlayerContext context = new PlayerContext(String.valueOf(characterId));
+
+        // Заполняем статистики
+        context.setStat("level", character.getLevel());
+        context.setStat("experience", character.getExperience());
+        context.setStat("gold", character.getGold());
+        context.setStat("reputation", character.getReputation());
+        context.setStat("sanity", character.getSanity());
+
+        // Добавляем статистики персонажа
+        var playerData = playerService.getAllCharacterData(characterId);
+        context.setStat("health", playerData.getHealth());
+        context.setStat("mana", playerData.getMana());
+        context.setStat("strength", playerData.getStrength());
+        context.setStat("agility", playerData.getAgility());
+        context.setStat("intellect", playerData.getIntellect());
+        context.setStat("stamina", playerData.getStamina());
+
+        // Заполняем завершенные квесты
+        List<com.human.tapMMO.model.tables.Quest> completedQuests = questRepository.findByCharacterId(characterId)
+                .stream()
+                .filter(q -> q.getQuestStage() == -1)
+                .collect(Collectors.toList());
+
+        for (var quest : completedQuests) {
+            context.completeQuest(quest.getQuest());
+        }
+
+        // TODO: Заполнение инвентаря из БД
+        // Здесь нужно добавить логику загрузки предметов из inventoryItemRepository
+
+        return context;
     }
 
-    // Получение квеста по ID
-    public Quest getQuest(String questId) {
-        return quests.get(questId);
+    /**
+     * Получает активные квесты персонажа
+     */
+    public List<Quest> getActiveQuests(Long characterId) {
+        List<com.human.tapMMO.model.tables.Quest> dbQuests = questRepository.findByCharacterId(characterId)
+                .stream()
+                .filter(q -> q.getQuestStage() > 0 && q.getQuestStage() != -1)
+                .collect(Collectors.toList());
+
+        return dbQuests.stream()
+                .map(dbQuest -> {
+                    Quest questTemplate = questTemplates.get(dbQuest.getQuest());
+                    if (questTemplate != null) {
+                        Quest activeQuest = new Quest(questTemplate.getId(), questTemplate.getTitle(), questTemplate.getDescription());
+                        activeQuest.setStatus(QuestStatus.IN_PROGRESS);
+                        activeQuest.setRootNode(questTemplate.getRootNode());
+                        activeQuest.setRewards(questTemplate.getRewards());
+                        activeQuest.setRequirements(questTemplate.getRequirements());
+                        return activeQuest;
+                    }
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
-    // Начало квеста игроком
-    public boolean startQuest(String playerId, String questId) {
-        PlayerContext playerContext = getOrCreatePlayerContext(playerId);
-        Quest quest = quests.get(questId);
+    /**
+     * Получает завершенные квесты персонажа
+     */
+    public List<Quest> getCompletedQuests(Long characterId) {
+        List<com.human.tapMMO.model.tables.Quest> completedDbQuests = questRepository.findByCharacterId(characterId)
+                .stream()
+                .filter(q -> q.getQuestStage() == -1)
+                .collect(Collectors.toList());
 
-        if (quest == null) {
+        return completedDbQuests.stream()
+                .map(dbQuest -> {
+                    Quest questTemplate = questTemplates.get(dbQuest.getQuest());
+                    if (questTemplate != null) {
+                        Quest completedQuest = new Quest(questTemplate.getId(), questTemplate.getTitle(), questTemplate.getDescription());
+                        completedQuest.setStatus(QuestStatus.COMPLETED);
+                        return completedQuest;
+                    }
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Проверяет, может ли персонаж начать квест
+     */
+    public boolean canStartQuest(Long characterId, String questId) {
+        Quest questTemplate = questTemplates.get(questId);
+        if (questTemplate == null) {
             return false;
         }
 
-        // Проверка требований квеста
-        for (QuestRequirement req : quest.getRequirements()) {
-            if (!req.isMet(playerContext)) {
-                return false;
-            }
+        // Проверяем, не начат ли уже квест
+        Optional<com.human.tapMMO.model.tables.Quest> existingQuest =
+                questRepository.findByCharacterIdAndQuest(characterId, questId);
+        if (existingQuest.isPresent()) {
+            return false;
         }
 
-        quest.setStatus(QuestStatus.IN_PROGRESS);
-        return true;
+        // Проверяем требования квеста
+        PlayerContext context = createPlayerContext(characterId);
+        return questTemplate.getRequirements().stream()
+                .allMatch(req -> req.isMet(context));
     }
 
-    // Выбор решения игроком
-    public QuestNode makeDecision(String playerId, String questId, String nodeId, String decisionId) {
-        Quest quest = quests.get(questId);
-        if (quest == null || quest.getStatus() != QuestStatus.IN_PROGRESS) {
-            return null;
+    /**
+     * Начинает квест для персонажа
+     */
+    @Transactional
+    public Quest startQuest(Long characterId, String questId) {
+        if (!canStartQuest(characterId, questId)) {
+            throw new RuntimeException("Cannot start quest: requirements not met or quest already active");
         }
 
-        // Находим текущий узел
-        QuestNode currentNode = findNode(quest.getRootNode(), nodeId);
-        if (currentNode == null) {
-            return null;
+        Quest questTemplate = questTemplates.get(questId);
+
+        // Создаем запись в БД
+        com.human.tapMMO.model.tables.Quest dbQuest = new com.human.tapMMO.model.tables.Quest();
+        dbQuest.setCharacterId(characterId);
+        dbQuest.setQuest(questId);
+        dbQuest.setQuestStage(1);
+        questRepository.save(dbQuest);
+
+        // Возвращаем runtime объект квеста
+        Quest runtimeQuest = new Quest(questTemplate.getId(), questTemplate.getTitle(), questTemplate.getDescription());
+        runtimeQuest.setStatus(QuestStatus.IN_PROGRESS);
+        runtimeQuest.setRootNode(questTemplate.getRootNode());
+        runtimeQuest.setRewards(questTemplate.getRewards());
+        runtimeQuest.setRequirements(questTemplate.getRequirements());
+
+        return runtimeQuest;
+    }
+
+    /**
+     * Получает текущий узел квеста для персонажа
+     */
+    public QuestNode getCurrentQuestNode(Long characterId, String questId) {
+        com.human.tapMMO.model.tables.Quest dbQuest = questRepository
+                .findByCharacterIdAndQuest(characterId, questId)
+                .orElseThrow(() -> new RuntimeException("Quest not found"));
+
+        Quest questTemplate = questTemplates.get(questId);
+        if (questTemplate == null) {
+            throw new RuntimeException("Quest template not found");
         }
+
+        // Находим текущий узел по стадии квеста
+        return findNodeByStage(questTemplate.getRootNode(), dbQuest.getQuestStage());
+    }
+
+    /**
+     * Рекурсивно ищет узел по стадии
+     */
+    private QuestNode findNodeByStage(QuestNode node, int stage) {
+        // Простая реализация - можно расширить для более сложной логики
+        if (stage == 1) {
+            return node;
+        }
+
+        // Для демонстрации - возвращаем первый дочерний узел
+        if (!node.getDecisions().isEmpty()) {
+            QuestDecision firstDecision = node.getDecisions().get(0);
+            if (firstDecision.getNextNode() != null) {
+                return firstDecision.getNextNode();
+            }
+        }
+
+        return node;
+    }
+
+    /**
+     * Выбирает решение в квесте и переходит к следующему узлу
+     */
+    @Transactional
+    public QuestNode makeDecision(Long characterId, String questId, String decisionId) {
+        QuestNode currentNode = getCurrentQuestNode(characterId, questId);
 
         // Находим выбранное решение
-        QuestDecision selectedDecision = null;
-        for (QuestDecision decision : currentNode.getDecisions()) {
-            if (decision.getId().equals(decisionId)) {
-                selectedDecision = decision;
-                break;
-            }
-        }
+        QuestDecision selectedDecision = currentNode.getDecisions().stream()
+                .filter(decision -> decision.getId().equals(decisionId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Decision not found"));
 
-        if (selectedDecision == null) {
-            return null;
-        }
-
-        // Проверка требований для узла, к которому ведет решение
-        PlayerContext playerContext = getOrCreatePlayerContext(playerId);
+        // Проверяем требования узла
+        PlayerContext context = createPlayerContext(characterId);
         QuestNode nextNode = selectedDecision.getNextNode();
 
-        for (QuestRequirement req : nextNode.getRequirements()) {
-            if (!req.isMet(playerContext)) {
-                return null;
+        if (nextNode != null) {
+            boolean canProceed = nextNode.getRequirements().stream()
+                    .allMatch(req -> req.isMet(context));
+
+            if (!canProceed) {
+                throw new RuntimeException("Requirements not met for next quest node");
             }
-        }
 
-        // Если узел является конечным, завершаем квест
-        if (nextNode.getDecisions().isEmpty()) {
-            completeQuest(playerId, questId);
-        }
+            // Обновляем стадию квеста в БД
+            com.human.tapMMO.model.tables.Quest dbQuest = questRepository
+                    .findByCharacterIdAndQuest(characterId, questId)
+                    .orElseThrow(() -> new RuntimeException("Quest not found"));
 
-        // Выдаем награды за прохождение текущего узла
-        giveNodeRewards(playerId, currentNode);
+            dbQuest.setQuestStage(dbQuest.getQuestStage() + 1);
+            questRepository.save(dbQuest);
+
+            // Применяем награды узла
+            applyNodeRewards(characterId, nextNode);
+        }
 
         return nextNode;
     }
 
-    // Завершение квеста
-    public void completeQuest(String playerId, String questId) {
-        PlayerContext playerContext = getOrCreatePlayerContext(playerId);
-        Quest quest = quests.get(questId);
-
-        if (quest != null) {
-            quest.setStatus(QuestStatus.COMPLETED);
-            playerContext.completeQuest(questId);
-
-            // Выдаем награды за квест
-            for (Reward reward : quest.getRewards().values()) {
-                applyReward(playerContext, reward);
-            }
-        }
-    }
-
-    // Проваленный квест
-    public void failQuest(String questId) {
-        Quest quest = quests.get(questId);
-        if (quest != null) {
-            quest.setStatus(QuestStatus.FAILED);
-        }
-    }
-
-    // Вспомогательные методы
-    private PlayerContext getOrCreatePlayerContext(String playerId) {
-        if (!playerContexts.containsKey(playerId)) {
-            playerContexts.put(playerId, new PlayerContext(playerId));
-        }
-        return playerContexts.get(playerId);
-    }
-
-    private QuestNode findNode(QuestNode node, String nodeId) {
-        if (node.getId().equals(nodeId)) {
-            return node;
-        }
-
-        for (QuestDecision decision : node.getDecisions()) {
-            QuestNode found = findNode(decision.getNextNode(), nodeId);
-            if (found != null) {
-                return found;
-            }
-        }
-
-        return null;
-    }
-
-    private void giveNodeRewards(String playerId, QuestNode node) {
-        PlayerContext playerContext = getOrCreatePlayerContext(playerId);
-
+    /**
+     * Применяет награды узла к персонажу
+     */
+    private void applyNodeRewards(Long characterId, QuestNode node) {
         for (Reward reward : node.getRewards().values()) {
-            applyReward(playerContext, reward);
+            applyReward(characterId, reward);
         }
     }
 
-    private void applyReward(PlayerContext playerContext, Reward reward) {
+    /**
+     * Применяет конкретную награду к персонажу
+     */
+    private void applyReward(Long characterId, Reward reward) {
+        Character character = playerService.getCharacterById(characterId)
+                .orElseThrow(() -> new RuntimeException("Character not found"));
+
         switch (reward.getType()) {
             case EXPERIENCE:
-                playerContext.setStat("experience", playerContext.getStat("experience") + reward.getAmount());
+                character.setExperience(character.getExperience() + reward.getAmount());
+                playerService.updateCharacter(character);
                 break;
             case GOLD:
-                playerContext.setStat("gold", playerContext.getStat("gold") + reward.getAmount());
-                break;
-            case ITEM:
-                playerContext.addItem(reward.getId(), reward.getAmount());
+                character.setGold(character.getGold() + reward.getAmount());
+                playerService.updateCharacter(character);
                 break;
             case REPUTATION:
-                playerContext.setStat("reputation_" + reward.getId(),
-                        playerContext.getStat("reputation_" + reward.getId()) + reward.getAmount());
+                character.setReputation(character.getReputation() + reward.getAmount());
+                playerService.updateCharacter(character);
+                break;
+            case ITEM:
+                // TODO: Добавить предмет в инвентарь через InventoryService
+//                itemService.pickUpItem();
                 break;
         }
     }
 
-    // Пример создания простого квеста с разветвлениями
-    public Quest createSampleQuest() {
-        // Создаем квест
-        Quest quest = new Quest("quest001", "Пропавший торговец",
-                "Найдите пропавшего торговца и выясните, что с ним случилось.");
+    /**
+     * Завершает квест
+     */
+    @Transactional
+    public void completeQuest(Long characterId, String questId) {
+        com.human.tapMMO.model.tables.Quest dbQuest = questRepository
+                .findByCharacterIdAndQuest(characterId, questId)
+                .orElseThrow(() -> new RuntimeException("Quest not found"));
 
-        // Добавляем требования к квесту
-        quest.setRequirements(List.of(new LevelRequirement(5)));
+        Quest questTemplate = questTemplates.get(questId);
+        if (questTemplate != null) {
+            // Применяем финальные награды квеста
+            PlayerContext context = createPlayerContext(characterId);
+            for (Reward reward : questTemplate.getRewards().values()) {
+                applyReward(characterId, reward);
+            }
+        }
 
-        // Создаем узлы квеста
-        QuestNode startNode = new QuestNode("node001", "Вы встречаете напуганного помощника торговца на дороге.", QuestNodeType.DIALOGUE);
+        // Отмечаем квест как завершенный
+        dbQuest.setQuestStage(-1);
+        questRepository.save(dbQuest);
+    }
 
-        QuestNode askBanditsNode = new QuestNode("node002", "Помощник упоминает, что видел бандитов неподалеку.", QuestNodeType.DIALOGUE);
-        QuestNode askForestNode = new QuestNode("node003", "Помощник рассказывает о странных звуках из леса.", QuestNodeType.DIALOGUE);
-        QuestNode ignoreNode = new QuestNode("node004", "Вы решили не помогать и уйти.", QuestNodeType.DIALOGUE);
+    /**
+     * Проверяет, завершен ли квест
+     */
+    public boolean isQuestCompleted(Long characterId, String questId) {
+        return questRepository.findByCharacterIdAndQuest(characterId, questId)
+                .map(quest -> quest.getQuestStage() == -1)
+                .orElse(false);
+    }
 
-        QuestNode banditsEncounterNode = new QuestNode("node005", "Вы нашли лагерь бандитов.", QuestNodeType.BATTLE);
-        banditsEncounterNode.addRequirement(new LevelRequirement(7));
+    /**
+     * Получает текущую стадию квеста
+     */
+    public int getQuestStage(Long characterId, String questId) {
+        return questRepository.findByCharacterIdAndQuest(characterId, questId)
+                .map(com.human.tapMMO.model.tables.Quest::getQuestStage)
+                .orElse(0);
+    }
 
-        QuestNode forestExplorationNode = new QuestNode("node006", "Вы исследуете лес в поисках следов.", QuestNodeType.COLLECTION);
-        forestExplorationNode.addRequirement(new ItemRequirement("torch", 1));
+    /**
+     * Добавляет шаблон квеста в систему
+     */
+    public void registerQuestTemplate(Quest questTemplate) {
+        questTemplates.put(questTemplate.getId(), questTemplate);
+    }
 
-        QuestNode fightBanditsNode = new QuestNode("node007", "Вы решаете атаковать бандитов.", QuestNodeType.BATTLE);
-        QuestNode negotiateNode = new QuestNode("node008", "Вы пытаетесь договориться с бандитами.", QuestNodeType.DIALOGUE);
+    /**
+     * Получает все доступные шаблоны квестов
+     */
+    public Collection<Quest> getAllQuestTemplates() {
+        return questTemplates.values();
+    }
 
-        QuestNode foundTraderCaptive = new QuestNode("node009", "Вы нашли торговца связанным в палатке бандитов.", QuestNodeType.DIALOGUE);
-        QuestNode banditsRefused = new QuestNode("node010", "Бандиты отказываются сотрудничать и нападают на вас.", QuestNodeType.BATTLE);
+    /**
+     * Получает доступные для начала квесты для персонажа
+     */
+    public List<Quest> getAvailableQuests(Long characterId) {
+        PlayerContext context = createPlayerContext(characterId);
 
-        QuestNode foundCaveNode = new QuestNode("node011", "Вы нашли пещеру с следами борьбы.", QuestNodeType.PUZZLE);
-        QuestNode foundTraderDead = new QuestNode("node012", "Вы нашли тело торговца, убитого диким зверем.", QuestNodeType.DIALOGUE);
+        return questTemplates.values().stream()
+                .filter(quest -> {
+                    // Проверяем, что квест не активен и не завершен
+                    boolean notActive = questRepository.findByCharacterIdAndQuest(characterId, quest.getId()).isEmpty();
+                    // Проверяем требования
+                    boolean requirementsMet = quest.getRequirements().stream()
+                            .allMatch(req -> req.isMet(context));
 
-        QuestNode rescueTrader = new QuestNode("node013", "Вы освобождаете торговца и возвращаетесь в город.", QuestNodeType.DIALOGUE);
-        QuestNode reportTragedy = new QuestNode("node014", "Вы возвращаетесь, чтобы сообщить печальные новости.", QuestNodeType.DIALOGUE);
+                    return notActive && requirementsMet;
+                })
+                .collect(Collectors.toList());
+    }
 
-        // Добавляем награды
-        rescueTrader.addReward(new Reward("gold", RewardType.GOLD, 500));
-        rescueTrader.addReward(new Reward("exp", RewardType.EXPERIENCE, 1000));
-        rescueTrader.addReward(new Reward("trader_favor", RewardType.REPUTATION, 20));
+    /**
+     * Отменяет активный квест
+     */
+    @Transactional
+    public void cancelQuest(Long characterId, String questId) {
+        com.human.tapMMO.model.tables.Quest dbQuest = questRepository
+                .findByCharacterIdAndQuest(characterId, questId)
+                .orElseThrow(() -> new RuntimeException("Quest not found"));
 
-        reportTragedy.addReward(new Reward("gold", RewardType.GOLD, 200));
-        reportTragedy.addReward(new Reward("exp", RewardType.EXPERIENCE, 800));
+        if (dbQuest.getQuestStage() == -1) {
+            throw new RuntimeException("Cannot cancel completed quest");
+        }
 
-        // Связываем узлы решениями
-        startNode.addDecision(new QuestDecision("decision001", "Спросить о бандитах", askBanditsNode));
-        startNode.addDecision(new QuestDecision("decision002", "Спросить о странных звуках из леса", askForestNode));
-        startNode.addDecision(new QuestDecision("decision003", "Игнорировать помощника и уйти", ignoreNode));
+        questRepository.delete(dbQuest);
+    }
 
-        askBanditsNode.addDecision(new QuestDecision("decision004", "Пойти искать бандитов", banditsEncounterNode));
-        askBanditsNode.addDecision(new QuestDecision("decision005", "Вернуться к началу разговора", startNode));
+    /**
+     * Получает описание текущего узла квеста
+     */
+    public String getCurrentQuestDescription(Long characterId, String questId) {
+        QuestNode currentNode = getCurrentQuestNode(characterId, questId);
+        return currentNode.getDescription();
+    }
 
-        askForestNode.addDecision(new QuestDecision("decision006", "Отправиться в лес на поиски", forestExplorationNode));
-        askForestNode.addDecision(new QuestDecision("decision007", "Вернуться к началу разговора", startNode));
+    /**
+     * Получает доступные решения для текущего узла квеста
+     */
+    public List<QuestDecision> getAvailableDecisions(Long characterId, String questId) {
+        QuestNode currentNode = getCurrentQuestNode(characterId, questId);
+        PlayerContext context = createPlayerContext(characterId);
 
-        banditsEncounterNode.addDecision(new QuestDecision("decision008", "Атаковать бандитов", fightBanditsNode));
-        banditsEncounterNode.addDecision(new QuestDecision("decision009", "Попытаться договориться", negotiateNode));
+        // Фильтруем решения по требованиям следующих узлов
+        return currentNode.getDecisions().stream()
+                .filter(decision -> {
+                    QuestNode nextNode = decision.getNextNode();
+                    if (nextNode == null) return true;
 
-        fightBanditsNode.addDecision(new QuestDecision("decision010", "Обыскать лагерь после боя", foundTraderCaptive));
-
-        negotiateNode.addDecision(new QuestDecision("decision011", "Предложить выкуп", foundTraderCaptive));
-        negotiateNode.addDecision(new QuestDecision("decision012", "Угрожать бандитам", banditsRefused));
-
-        banditsRefused.addDecision(new QuestDecision("decision013", "Сражаться с бандитами", foundTraderCaptive));
-
-        forestExplorationNode.addDecision(new QuestDecision("decision014", "Следовать по следам", foundCaveNode));
-
-        foundCaveNode.addDecision(new QuestDecision("decision015", "Исследовать пещеру", foundTraderDead));
-
-        foundTraderCaptive.addDecision(new QuestDecision("decision016", "Освободить торговца", rescueTrader));
-
-        foundTraderDead.addDecision(new QuestDecision("decision017", "Вернуться с плохими новостями", reportTragedy));
-
-        // Устанавливаем корневой узел квеста
-        quest.setRootNode(startNode);
-
-        return quest;
+                    return nextNode.getRequirements().stream()
+                            .allMatch(req -> req.isMet(context));
+                })
+                .collect(Collectors.toList());
     }
 }

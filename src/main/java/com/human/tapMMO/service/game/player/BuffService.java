@@ -1,17 +1,23 @@
 package com.human.tapMMO.service.game.player;
 
 import com.human.tapMMO.runtime.game.actors.Actor;
+import com.human.tapMMO.runtime.game.actors.player.Player;
 import com.human.tapMMO.runtime.game.buffs.Buff;
+import com.human.tapMMO.runtime.game.skills.passive.PassiveAbility;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Component
-public class BuffService {
-    // Активные баффы для каждого актера
+@Slf4j
+public class EnhancedBuffService {
+    // Активные баффы для каждого актера (для обратной совместимости)
     private final Map<Actor, List<Buff>> activeBuffs = new ConcurrentHashMap<>();
 
     /**
@@ -20,21 +26,33 @@ public class BuffService {
      * @param target цель
      */
     public void applyBuff(Buff buff, Actor target) {
-        // Получение списка активных баффов цели
-        List<Buff> buffs = activeBuffs.computeIfAbsent(target, k -> new ArrayList<>());
-
-        // Проверка, есть ли уже такой бафф
-        for (Buff existingBuff : new ArrayList<>(buffs)) {
-            if (existingBuff.getClass().equals(buff.getClass())) {
-                // Если такой бафф уже есть, удаляем его
-                removeBuff(existingBuff, target);
-                break;
-            }
+        if (buff == null || target == null || !target.isAlive()) {
+            log.warn("Попытка применить бафф к недопустимой цели");
+            return;
         }
 
-        // Применение баффа
+        // Проверяем, можно ли применить бафф
+        if (!canApplyBuff(buff, target)) {
+            log.debug("Не удалось применить бафф {} к {}", buff.getName(), target.getName());
+            return;
+        }
+
+        // Получаем список баффов для цели
+        List<Buff> targetBuffs = activeBuffs.computeIfAbsent(target, k -> new ArrayList<>());
+
+        // Проверяем на стекование или замещение
+        handleBuffStacking(buff, targetBuffs);
+
+        // Применяем бафф
         buff.applyTo(target);
-        buffs.add(buff);
+        targetBuffs.add(buff);
+
+        // Для игроков добавляем бафф в их личный список и пересчитываем статы
+        if (target instanceof Player player) {
+            player.addBuff(buff);
+        }
+
+        log.info("Бафф {} применен к {}", buff.getName(), target.getName());
     }
 
     /**
@@ -43,132 +61,321 @@ public class BuffService {
      * @param target цель
      */
     public void removeBuff(Buff buff, Actor target) {
-        List<Buff> buffs = activeBuffs.get(target);
-        if (buffs != null) {
+        if (buff == null || target == null) return;
+
+        List<Buff> targetBuffs = activeBuffs.get(target);
+        if (targetBuffs != null && targetBuffs.remove(buff)) {
             buff.remove();
-            buffs.remove(buff);
+
+            // Для игроков удаляем бафф из их личного списка и пересчитываем статы
+            if (target instanceof Player player) {
+                player.removeBuff(buff);
+            }
+
+            log.info("Бафф {} удален с {}", buff.getName(), target.getName());
         }
     }
 
     /**
-     * Обновляет все активные баффы
+     * Удаляет все баффы указанного типа с цели
+     * @param buffClass класс баффа
+     * @param target цель
+     */
+    public void removeBuffsByType(Class<? extends Buff> buffClass, Actor target) {
+        List<Buff> targetBuffs = activeBuffs.get(target);
+        if (targetBuffs == null) return;
+
+        List<Buff> buffsToRemove = targetBuffs.stream()
+                .filter(buffClass::isInstance)
+                .collect(Collectors.toList());
+
+        for (Buff buff : buffsToRemove) {
+            removeBuff(buff, target);
+        }
+    }
+
+    /**
+     * Удаляет все баффы с цели
+     * @param target цель
+     */
+    public void removeAllBuffs(Actor target) {
+        List<Buff> targetBuffs = activeBuffs.get(target);
+        if (targetBuffs == null) return;
+
+        // Создаем копию списка для безопасного удаления
+        List<Buff> buffsToRemove = new ArrayList<>(targetBuffs);
+        for (Buff buff : buffsToRemove) {
+            removeBuff(buff, target);
+        }
+    }
+
+    /**
+     * Удаляет все негативные баффы с цели
+     * @param target цель
+     */
+    public void removeNegativeBuffs(Actor target) {
+        List<Buff> targetBuffs = activeBuffs.get(target);
+        if (targetBuffs == null) return;
+
+        List<Buff> negativeBuffs = targetBuffs.stream()
+                .filter(buff -> !buff.isPositive())
+                .collect(Collectors.toList());
+
+        for (Buff buff : negativeBuffs) {
+            removeBuff(buff, target);
+        }
+    }
+
+    /**
+     * Проверяет, есть ли у цели бафф указанного типа
+     * @param buffClass класс баффа
+     * @param target цель
+     * @return true если бафф есть
+     */
+    public boolean hasBuff(Class<? extends Buff> buffClass, Actor target) {
+        List<Buff> targetBuffs = activeBuffs.get(target);
+        if (targetBuffs == null) return false;
+
+        return targetBuffs.stream().anyMatch(buffClass::isInstance);
+    }
+
+    /**
+     * Получает все баффы цели
+     * @param target цель
+     * @return список баффов
+     */
+    public List<Buff> getBuffs(Actor target) {
+        List<Buff> targetBuffs = activeBuffs.get(target);
+        return targetBuffs != null ? new ArrayList<>(targetBuffs) : new ArrayList<>();
+    }
+
+    /**
+     * Получает баффы определенного типа
+     * @param buffClass класс баффа
+     * @param target цель
+     * @return список баффов указанного типа
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Buff> List<T> getBuffsByType(Class<T> buffClass, Actor target) {
+        List<Buff> targetBuffs = activeBuffs.get(target);
+        if (targetBuffs == null) return new ArrayList<>();
+
+        return targetBuffs.stream()
+                .filter(buffClass::isInstance)
+                .map(buff -> (T) buff)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Обновляет все баффы (должен вызываться каждый игровой тик)
      * @param deltaTime прошедшее время в секундах
      */
     public void updateBuffs(float deltaTime) {
-        // Обновление всех баффов для всех акторов
         for (Map.Entry<Actor, List<Buff>> entry : activeBuffs.entrySet()) {
-            Actor actor = entry.getKey();
+            Actor target = entry.getKey();
             List<Buff> buffs = entry.getValue();
 
-            // Обновление каждого баффа
-            for (Buff buff : new ArrayList<>(buffs)) {
-                boolean isActive = buff.update(deltaTime);
-                if (!isActive) {
+            // Создаем копию списка для безопасного удаления
+            List<Buff> buffsToUpdate = new ArrayList<>(buffs);
+
+            for (Buff buff : buffsToUpdate) {
+                if (!buff.update(deltaTime)) {
+                    // Бафф истек, удаляем его
                     buffs.remove(buff);
+
+                    // Для игроков пересчитываем статы
+                    if (target instanceof Player player) {
+                        player.removeBuff(buff);
+                    }
+
+                    log.debug("Бафф {} истек у {}", buff.getName(), target.getName());
                 }
             }
 
-            // Если у актора больше нет баффов, удаляем его из мапы
+            // Если у актера не осталось баффов, удаляем его из карты
             if (buffs.isEmpty()) {
-                activeBuffs.remove(actor);
+                activeBuffs.remove(target);
             }
         }
     }
 
     /**
-     * Получает все активные баффы актора
-     * @param actor актор
-     * @return список активных баффов
+     * Очищает все баффы при смерти актера
+     * @param target цель
      */
-    public List<Buff> getActiveBuffs(Actor actor) {
-        return activeBuffs.getOrDefault(actor, new ArrayList<>());
-    }
-
-    /**
-     * Получает все позитивные баффы актора
-     * @param actor актор
-     * @return список позитивных баффов
-     */
-    public List<Buff> getPositiveBuffs(Actor actor) {
-        List<Buff> result = new ArrayList<>();
-        List<Buff> buffs = activeBuffs.get(actor);
-
-        if (buffs != null) {
-            for (Buff buff : buffs) {
-                if (buff.isPositive()) {
-                    result.add(buff);
-                }
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * Получает все негативные баффы (дебаффы) актора
-     * @param actor актор
-     * @return список негативных баффов
-     */
-    public List<Buff> getNegativeBuffs(Actor actor) {
-        List<Buff> result = new ArrayList<>();
-        List<Buff> buffs = activeBuffs.get(actor);
-
-        if (buffs != null) {
-            for (Buff buff : buffs) {
-                if (!buff.isPositive()) {
-                    result.add(buff);
-                }
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * Удаляет все баффы актора
-     * @param actor актор
-     */
-    public void removeAllBuffs(Actor actor) {
-        List<Buff> buffs = activeBuffs.get(actor);
-        if (buffs != null) {
-            for (Buff buff : new ArrayList<>(buffs)) {
+    public void onActorDeath(Actor target) {
+        List<Buff> targetBuffs = activeBuffs.remove(target);
+        if (targetBuffs != null) {
+            for (Buff buff : targetBuffs) {
                 buff.remove();
             }
-            activeBuffs.remove(actor);
+            log.info("Все баффы удалены с {} после смерти", target.getName());
         }
     }
 
     /**
-     * Удаляет все негативные баффы актора (очищение)
-     * @param actor актор
+     * Проверяет, можно ли применить бафф к цели
      */
-    public void dispelNegativeBuffs(Actor actor) {
-        List<Buff> buffs = activeBuffs.get(actor);
-        if (buffs != null) {
-            for (Buff buff : new ArrayList<>(buffs)) {
-                if (!buff.isPositive()) {
-                    buff.remove();
-                    buffs.remove(buff);
+    private boolean canApplyBuff(Buff buff, Actor target) {
+        // Проверяем иммунитет к баффам (можно расширить)
+        if (hasBuffImmunity(target, buff)) {
+            return false;
+        }
+
+        // Проверяем максимальное количество баффов
+        List<Buff> targetBuffs = activeBuffs.get(target);
+        if (targetBuffs != null && targetBuffs.size() >= getMaxBuffCount(target)) {
+            log.warn("Достигнуто максимальное количество баффов для {}", target.getName());
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Обрабатывает стекование и замещение баффов
+     */
+    private void handleBuffStacking(Buff newBuff, List<Buff> existingBuffs) {
+        // Ищем существующие баффы того же типа
+        List<Buff> sameTypeBuffs = existingBuffs.stream()
+                .filter(buff -> buff.getClass().equals(newBuff.getClass()))
+                .collect(Collectors.toList());
+
+        if (!sameTypeBuffs.isEmpty()) {
+            // Определяем стратегию стекования
+            BuffStackingStrategy strategy = getStackingStrategy(newBuff);
+
+            switch (strategy) {
+                case REPLACE -> {
+                    // Заменяем старые баффы новым
+                    for (Buff oldBuff : sameTypeBuffs) {
+                        existingBuffs.remove(oldBuff);
+                        oldBuff.remove();
+                    }
+                }
+                case REFRESH -> {
+                    // Обновляем время действия существующего баффа
+                    if (!sameTypeBuffs.isEmpty()) {
+                        Buff existingBuff = sameTypeBuffs.get(0);
+                        existingBuff.setDuration(newBuff.getDuration());
+                        return; // Не добавляем новый бафф
+                    }
+                }
+                case STACK -> {
+                    // Разрешаем стекование (ничего не делаем)
+                }
+                case REJECT -> {
+                    // Отклоняем новый бафф если уже есть такой
+                    return;
                 }
             }
         }
     }
 
     /**
-     * Проверяет, есть ли у актора определенный тип баффа
-     * @param actor актор
-     * @param buffClass класс баффа
-     * @return true если у актора есть указанный бафф
+     * Получает стратегию стекования для баффа
      */
-    public boolean hasBuff(Actor actor, Class<? extends Buff> buffClass) {
-        List<Buff> buffs = activeBuffs.get(actor);
-        if (buffs != null) {
-            for (Buff buff : buffs) {
-                if (buffClass.isInstance(buff)) {
-                    return true;
+    private BuffStackingStrategy getStackingStrategy(Buff buff) {
+        // По умолчанию заменяем баффы того же типа
+        // Можно настроить для конкретных типов баффов
+        if (buff.getName().contains("Poison") || buff.getName().contains("Яд")) {
+            return BuffStackingStrategy.STACK;
+        }
+
+        return BuffStackingStrategy.REPLACE;
+    }
+
+    /**
+     * Проверяет иммунитет к баффам
+     */
+    private boolean hasBuffImmunity(Actor target, Buff buff) {
+        // Проверяем пассивные способности игрока на иммунитет
+        if (target instanceof Player player) {
+            for (PassiveAbility ability : player.getPassiveAbilities()) {
+                if (ability.isActive() && ability instanceof BuffImmunityAbility immunityAbility) {
+                    if (immunityAbility.isImmuneToBuffType(buff.getClass())) {
+                        return true;
+                    }
                 }
             }
         }
+
         return false;
+    }
+
+    /**
+     * Получает максимальное количество баффов для актера
+     */
+    private int getMaxBuffCount(Actor target) {
+        int baseMaxBuffs = 10; // Базовое количество
+
+        if (target instanceof Player player) {
+            // Можно увеличить лимит через таланты или способности
+            for (PassiveAbility ability : player.getPassiveAbilities()) {
+                if (ability.isActive() && ability instanceof BuffCapacityAbility capacityAbility) {
+                    baseMaxBuffs += capacityAbility.getAdditionalBuffSlots();
+                }
+            }
+        }
+
+        return baseMaxBuffs;
+    }
+
+    /**
+     * Стратегии стекования баффов
+     */
+    private enum BuffStackingStrategy {
+        REPLACE,  // Заменить существующий бафф
+        REFRESH,  // Обновить время действия существующего
+        STACK,    // Разрешить стекование
+        REJECT    // Отклонить новый бафф
+    }
+
+    /**
+     * Интерфейс для способностей, дающих иммунитет к баффам
+     */
+    public interface BuffImmunityAbility {
+        boolean isImmuneToBuffType(Class<? extends Buff> buffType);
+    }
+
+    /**
+     * Интерфейс для способностей, увеличивающих лимит баффов
+     */
+    public interface BuffCapacityAbility {
+        int getAdditionalBuffSlots();
+    }
+
+    /**
+     * Получает статистику баффов для цели
+     */
+    public BuffStatistics getBuffStatistics(Actor target) {
+        List<Buff> targetBuffs = activeBuffs.get(target);
+        if (targetBuffs == null) {
+            return new BuffStatistics(0, 0, 0);
+        }
+
+        long positiveCount = targetBuffs.stream().filter(Buff::isPositive).count();
+        long negativeCount = targetBuffs.stream().filter(buff -> !buff.isPositive()).count();
+        long permanentCount = targetBuffs.stream().filter(Buff::isPermanent).count();
+
+        return new BuffStatistics((int) positiveCount, (int) negativeCount, (int) permanentCount);
+    }
+
+    /**
+     * Класс для статистики баффов
+     */
+    @Getter
+    public static class BuffStatistics {
+        private final int positiveBuffs;
+        private final int negativeBuffs;
+        private final int permanentBuffs;
+
+        public BuffStatistics(int positiveBuffs, int negativeBuffs, int permanentBuffs) {
+            this.positiveBuffs = positiveBuffs;
+            this.negativeBuffs = negativeBuffs;
+            this.permanentBuffs = permanentBuffs;
+        }
+
+        public int getTotalBuffs() { return positiveBuffs + negativeBuffs; }
     }
 }
